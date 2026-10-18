@@ -22,9 +22,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var wheelController: WheelController?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        let runner = ConversionRunner(registry: registry)
         let wheel = WheelController { [logger] item, files in
-            let paths = files.map(\.path).joined(separator: ", ")
-            logger.notice("\(item.title, privacy: .public): \(paths, privacy: .public)")
+            switch item.action {
+            case .convert(let format):
+                Task {
+                    for failure in await runner.run(files, to: format) {
+                        logger.error(
+                            "\(failure.file.path, privacy: .public): \(String(describing: failure.error), privacy: .public)"
+                        )
+                    }
+                }
+            case .placeholder:
+                let paths = files.map(\.path).joined(separator: ", ")
+                logger.notice("\(item.title, privacy: .public): \(paths, privacy: .public)")
+            }
         }
         let monitor = DragMonitor(
             bindings: [.convert: .shift, .actions: .control],

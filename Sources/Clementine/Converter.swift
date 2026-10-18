@@ -3,6 +3,7 @@ import UniformTypeIdentifiers
 
 enum ConversionError: Error {
     case unreadableSource
+    case unsupportedSource
     case encoderUnavailable
     case writeFailed
 }
@@ -24,9 +25,16 @@ struct ConverterRegistry: Sendable {
         return perFile[0].filter { format in perFile.allSatisfy { $0.contains(format) } }
     }
 
+    // Nil when the file changed or vanished after the wheel offered the format.
+    func converter(for file: URL, to format: OutputFormat) -> (any Converter)? {
+        guard let type = Self.contentType(of: file), !type.conforms(to: format.type) else { return nil }
+        return converters.first { converter in
+            converter.inputs.contains(where: type.conforms(to:)) && converter.outputs.contains(format)
+        }
+    }
+
     private func formats(for file: URL) -> [OutputFormat] {
-        // A file whose metadata can't be read can't be converted either; it simply offers nothing.
-        guard let type = try? file.resourceValues(forKeys: [.contentTypeKey]).contentType else { return [] }
+        guard let type = Self.contentType(of: file) else { return [] }
 
         var formats: [OutputFormat] = []
         for converter in converters where converter.inputs.contains(where: type.conforms(to:)) {
@@ -35,5 +43,10 @@ struct ConverterRegistry: Sendable {
             }
         }
         return formats
+    }
+
+    // A file whose metadata can't be read can't be converted either; it simply offers nothing.
+    private static func contentType(of file: URL) -> UTType? {
+        try? file.resourceValues(forKeys: [.contentTypeKey]).contentType
     }
 }
