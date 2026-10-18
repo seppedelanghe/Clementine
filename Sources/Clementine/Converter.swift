@@ -1,9 +1,17 @@
 import Foundation
 import UniformTypeIdentifiers
 
+enum ConversionError: Error {
+    case unreadableSource
+    case encoderUnavailable
+    case writeFailed
+}
+
 protocol Converter: Sendable {
     var inputs: [UTType] { get }
     var outputs: [OutputFormat] { get }
+
+    func convert(_ source: URL, to format: OutputFormat, destination: URL) async throws
 }
 
 struct ConverterRegistry: Sendable {
