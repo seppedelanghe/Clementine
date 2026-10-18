@@ -16,17 +16,41 @@ struct ClementineApp: App {
 }
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    private let logger = Logger(subsystem: "be.seppedelanghe.clementine", category: "drag")
+    private let logger = Logger(subsystem: "be.seppedelanghe.clementine", category: "wheel")
     private var dragMonitor: DragMonitor?
+    private var wheelController: WheelController?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        let monitor = DragMonitor(bindings: [.convert: .shift, .actions: .control]) { [logger] trigger in
-            let files = trigger.files.map(\.path).joined(separator: ", ")
-            logger.notice(
-                "\(String(describing: trigger.wheel), privacy: .public) at (\(trigger.location.x), \(trigger.location.y)): \(files, privacy: .public)"
-            )
+        let wheel = WheelController { [logger] item, files in
+            let paths = files.map(\.path).joined(separator: ", ")
+            logger.notice("\(item.title, privacy: .public): \(paths, privacy: .public)")
         }
+        let monitor = DragMonitor(
+            bindings: [.convert: .shift, .actions: .control],
+            onTrigger: { trigger in
+                let (title, items) = Self.placeholderWheel(trigger.wheel)
+                wheel.show(title: title, items: items, files: trigger.files, at: trigger.location)
+            },
+            onDragEnd: { wheel.dragEnded() }
+        )
         monitor.start()
         dragMonitor = monitor
+        wheelController = wheel
+    }
+
+    private static func placeholderWheel(_ wheel: Wheel) -> (String, [WheelItem]) {
+        switch wheel {
+        case .convert:
+            ("Convert", ["JPG", "PNG", "HEIC", "TIFF", "PDF"].map { WheelItem(title: $0, symbol: "photo") })
+        case .actions:
+            (
+                "Actions",
+                [
+                    WheelItem(title: "Copy Path", symbol: "doc.on.clipboard"),
+                    WheelItem(title: "AirDrop", symbol: "dot.radiowaves.left.and.right"),
+                    WheelItem(title: "Terminal", symbol: "terminal"),
+                ]
+            )
+        }
     }
 }

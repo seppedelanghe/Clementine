@@ -15,15 +15,21 @@ struct DragTrigger {
 final class DragMonitor {
     private let bindings: [Wheel: NSEvent.ModifierFlags]
     private let onTrigger: (DragTrigger) -> Void
+    private let onDragEnd: () -> Void
     private let dragPasteboard = NSPasteboard(name: .drag)
     private var seenChangeCount = 0
     private var draggedFiles: [URL] = []
     private var heldModifiers: NSEvent.ModifierFlags = []
     private var modifierPoll: Timer?
 
-    init(bindings: [Wheel: NSEvent.ModifierFlags], onTrigger: @escaping (DragTrigger) -> Void) {
+    init(
+        bindings: [Wheel: NSEvent.ModifierFlags],
+        onTrigger: @escaping (DragTrigger) -> Void,
+        onDragEnd: @escaping () -> Void
+    ) {
         self.bindings = bindings
         self.onTrigger = onTrigger
+        self.onDragEnd = onDragEnd
     }
 
     func start() {
@@ -79,6 +85,7 @@ final class DragMonitor {
         modifierPoll?.invalidate()
         modifierPoll = nil
         draggedFiles = []
+        onDragEnd()
     }
 
     private func currentModifiers() -> NSEvent.ModifierFlags {
