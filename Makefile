@@ -1,7 +1,7 @@
 CONFIG ?= debug
 APP := build/Clementine.app
 
-.PHONY: build app run clean
+.PHONY: build app run clean ffmpeg
 
 build:
 	swift build -c $(CONFIG)
@@ -17,5 +17,9 @@ app: build
 run: app
 	open $(APP)
 
+# Leaves build/ffmpeg alone: rebuilding it downloads sources and takes minutes.
 clean:
-	rm -rf .build build
+	rm -rf .build $(APP)
+
+ffmpeg:
+	scripts/build-ffmpeg.sh
