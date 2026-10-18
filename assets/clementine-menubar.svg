@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" width="18" height="18">
+  <g transform="translate(18 18) scale(0.9) rotate(55) translate(-18 -18.5)"
+     fill="none" stroke="#000" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Segment outline -->
+    <path stroke-width="2"
+          d="M3 15.5 C3 11.5 6 9 9.5 10 C13 11 15.5 13.5 18 13.5 C20.5 13.5 23 11 26.5 10 C30 9 33 11.5 33 15.5 C33 22.5 26.5 27.5 18 27.5 C9.5 27.5 3 22.5 3 15.5 Z"/>
+    <!-- Juice-vesicle ribs, fanning out from the fruit's center -->
+    <g stroke-width="1.5">
+      <path d="M18 17.5 L18 24.5"/>
+      <path d="M12 16.8 L9.8 22.4"/>
+      <path d="M24 16.8 L26.2 22.4"/>
+      <path d="M8 13.1 L6.3 15"/>
+      <path d="M28 13.1 L29.7 15"/>
+    </g>
+  </g>
+</svg>

@@ -5,6 +5,16 @@ import os
 struct ClementineApp: App {
     @NSApplicationDelegateAdaptor private var appDelegate: AppDelegate
 
+    // Loaded from the bundle because asset catalogs need Xcode's actool to compile.
+    private static let menuBarIcon: NSImage = {
+        guard
+            let url = Bundle.main.url(forResource: "clementine-menubar", withExtension: "svg"),
+            let image = NSImage(contentsOf: url)
+        else { preconditionFailure("The menu bar icon is missing from the app bundle") }
+        image.isTemplate = true
+        return image
+    }()
+
     var body: some Scene {
         let activity = appDelegate.activity
         MenuBarExtra {
@@ -20,7 +30,7 @@ struct ClementineApp: App {
             .keyboardShortcut("q")
         } label: {
             HStack(spacing: 4) {
-                Image(systemName: "arrow.triangle.2.circlepath")
+                Image(nsImage: Self.menuBarIcon)
                 if let fraction = activity.fraction {
                     Text(fraction.formatted(.percent.precision(.fractionLength(0))))
                         .monospacedDigit()

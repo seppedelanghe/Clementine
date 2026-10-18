@@ -10,8 +10,10 @@ build:
 # SwiftPM only produces a bare executable; the .app bundle is assembled here.
 app: build $(FFMPEG)
 	rm -rf $(APP)
-	mkdir -p $(APP)/Contents/MacOS
+	mkdir -p $(APP)/Contents/MacOS $(APP)/Contents/Resources
 	cp Support/Info.plist $(APP)/Contents/
+	cp assets/clementine-icon.icns $(APP)/Contents/Resources/AppIcon.icns
+	cp assets/clementine-menubar.svg $(APP)/Contents/Resources/
 	cp "$$(swift build -c $(CONFIG) --show-bin-path)/Clementine" $(APP)/Contents/MacOS/
 	cp $(FFMPEG) $(APP)/Contents/MacOS/
 	# Nested code is signed before the bundle that contains it.
