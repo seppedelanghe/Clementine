@@ -5,38 +5,44 @@ struct AudioConverter: Converter {
     let inputs: [UTType] = [
         .mp3, .mpeg4Audio, .wav, .aiff, UTType("public.aac-audio")!, UTType("org.xiph.flac")!,
     ]
-    let outputs: [OutputFormat] = [.m4a, .wav, .aiff]
+    let outputs: [OutputFormat] = [.m4a, .wav, .aiff, .flac]
 
     func convert(_ source: URL, to format: OutputFormat, destination: URL) async throws {
         assert(outputs.contains(format))
         if format == .m4a {
             try await MediaExport.exportAudio(source, to: destination)
         } else {
-            try writePCM(source, bigEndian: format == .aiff, to: destination)
+            try transcode(source, as: format, to: destination)
         }
     }
 
-    // Export sessions can't write WAV or AIFF from compressed audio, so decode and write PCM
-    // directly. The container comes from the destination's extension.
-    private func writePCM(_ source: URL, bigEndian: Bool, to destination: URL) throws {
+    // Export sessions can't write WAV, AIFF or FLAC, so decode and re-encode with AVAudioFile.
+    // The container comes from the destination's extension.
+    private func transcode(_ source: URL, as format: OutputFormat, to destination: URL) throws {
         let input = try AVAudioFile(forReading: source)
-        let format = input.processingFormat
-        let settings: [String: Any] = [
-            AVFormatIDKey: kAudioFormatLinearPCM,
-            AVSampleRateKey: format.sampleRate,
-            AVNumberOfChannelsKey: format.channelCount,
-            AVLinearPCMBitDepthKey: 16,
-            AVLinearPCMIsFloatKey: false,
-            AVLinearPCMIsBigEndianKey: bigEndian,
+        let processing = input.processingFormat
+        var settings: [String: Any] = [
+            AVSampleRateKey: processing.sampleRate,
+            AVNumberOfChannelsKey: processing.channelCount,
         ]
+        if format == .flac {
+            // Written from float samples this is always 24-bit FLAC: lossless for sources up to
+            // 24-bit, and only ~1% larger than 16-bit for 16-bit sources.
+            settings[AVFormatIDKey] = kAudioFormatFLAC
+        } else {
+            settings[AVFormatIDKey] = kAudioFormatLinearPCM
+            settings[AVLinearPCMBitDepthKey] = 16
+            settings[AVLinearPCMIsFloatKey] = false
+            settings[AVLinearPCMIsBigEndianKey] = format == .aiff
+        }
         let output = try AVAudioFile(
             forWriting: destination,
             settings: settings,
-            commonFormat: format.commonFormat,
-            interleaved: format.isInterleaved
+            commonFormat: processing.commonFormat,
+            interleaved: processing.isInterleaved
         )
 
-        guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: 1 << 16) else {
+        guard let buffer = AVAudioPCMBuffer(pcmFormat: processing, frameCapacity: 1 << 16) else {
             throw ConversionError.writeFailed
         }
         while input.framePosition < input.length {

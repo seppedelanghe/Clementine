@@ -21,4 +21,5 @@ extension OutputFormat {
     static let m4a = OutputFormat(title: "M4A", type: .mpeg4Audio, fileExtension: "m4a", symbol: "waveform")
     static let wav = OutputFormat(title: "WAV", type: .wav, fileExtension: "wav", symbol: "waveform")
     static let aiff = OutputFormat(title: "AIFF", type: .aiff, fileExtension: "aiff", symbol: "waveform")
+    static let flac = OutputFormat(title: "FLAC", type: UTType("org.xiph.flac")!, fileExtension: "flac", symbol: "waveform")
 }

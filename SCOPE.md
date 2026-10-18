@@ -10,7 +10,7 @@ bundled.
 |--------|------------------------------------|----------------------------|--------------|
 | Images | JPG, PNG, HEIC, TIFF, GIF, BMP, WebP | JPG, PNG, HEIC, TIFF, PDF | ImageIO      |
 | Video  | MOV, MP4, M4V                      | MP4, MOV, M4A (audio only) | AVFoundation |
-| Audio  | MP3, M4A, WAV, AIFF, AAC, FLAC     | M4A, WAV, AIFF             | AVFoundation |
+| Audio  | MP3, M4A, WAV, AIFF, AAC, FLAC     | M4A, WAV, AIFF, FLAC       | AVFoundation |
 
 ## Quick actions wheel (Control)
 
