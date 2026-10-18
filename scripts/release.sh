@@ -9,8 +9,9 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 VERSION="$(plutil -extract CFBundleShortVersionString raw Support/Info.plist)"
-IDENTITY="$(security find-identity -v -p codesigning | grep -o '"Developer ID Application: [^"]*"' | head -1 | tr -d '"')"
-[[ -n "$IDENTITY" ]] || { echo "No Developer ID Application identity in the keychain" >&2; exit 1; }
+# The personal developer account, not any company identity that may share the keychain.
+IDENTITY="$(security find-identity -v -p codesigning | grep -o '"Developer ID Application: Seppe De Langhe ([^"]*"' | head -1 | tr -d '"')"
+[[ -n "$IDENTITY" ]] || { echo "No personal Developer ID Application identity in the keychain" >&2; exit 1; }
 
 APP=build/Clementine.app
 OUT=build/release
@@ -35,5 +36,15 @@ spctl --assess --type execute --verbose "$APP"
 # The LGPL requires publishing the exact sources the bundled ffmpeg was built from.
 tar -czf "$SOURCES" -C build/ffmpeg sources -C "$ROOT" scripts/build-ffmpeg.sh
 
+# The appcast lists only this release: the feed URL in Info.plist always resolves to the latest
+# release's copy. generate_appcast signs the zip with the EdDSA key in the keychain.
+scripts/fetch-sparkle-tools.sh
+mkdir "$OUT/appcast"
+cp "$ZIP" "$OUT/appcast/"
+build/sparkle/bin/generate_appcast \
+    --download-url-prefix "https://github.com/seppedelanghe/Clementine/releases/download/v$VERSION/" \
+    -o "$OUT/appcast.xml" "$OUT/appcast"
+rm -rf "$OUT/appcast"
+
 echo "Release $VERSION:"
-ls -lh "$ZIP" "$SOURCES"
+ls -lh "$ZIP" "$SOURCES" "$OUT/appcast.xml"

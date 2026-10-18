@@ -29,9 +29,12 @@ show their progress in the menu bar.
 
 Actions: **Copy**, **Copy Path** and **AirDrop**.
 
-## Requirements
+## Install
 
-macOS 14 or later on Apple silicon.
+Download `Clementine-<version>.zip` from [Releases](https://github.com/seppedelanghe/Clementine/releases),
+unzip it and move Clementine to Applications. It lives in the menu bar and updates itself.
+
+Requires macOS 14 or later on Apple silicon.
 
 ## Building
 
