@@ -1,8 +1,14 @@
 import SwiftUI
 
+enum WheelAction: Hashable {
+    case convert(OutputFormat)
+    case placeholder
+}
+
 struct WheelItem: Hashable {
     let title: String
     let symbol: String
+    let action: WheelAction
 }
 
 @MainActor

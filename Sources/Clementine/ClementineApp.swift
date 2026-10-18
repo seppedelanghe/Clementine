@@ -17,6 +17,7 @@ struct ClementineApp: App {
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private let logger = Logger(subsystem: "be.seppedelanghe.clementine", category: "wheel")
+    private let registry = ConverterRegistry(converters: [ImageConverter()])
     private var dragMonitor: DragMonitor?
     private var wheelController: WheelController?
 
@@ -27,8 +28,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         let monitor = DragMonitor(
             bindings: [.convert: .shift, .actions: .control],
-            onTrigger: { trigger in
-                let (title, items) = Self.placeholderWheel(trigger.wheel)
+            onTrigger: { [registry] trigger in
+                let (title, items) = Self.wheelContent(for: trigger, registry: registry)
+                // A wheel with nothing to offer would only block the ordinary drop underneath it.
+                guard !items.isEmpty else { return }
                 wheel.show(title: title, items: items, files: trigger.files, at: trigger.location)
             },
             onDragEnd: { wheel.dragEnded() }
@@ -38,17 +41,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         wheelController = wheel
     }
 
-    private static func placeholderWheel(_ wheel: Wheel) -> (String, [WheelItem]) {
-        switch wheel {
+    private static func wheelContent(
+        for trigger: DragTrigger,
+        registry: ConverterRegistry
+    ) -> (String, [WheelItem]) {
+        switch trigger.wheel {
         case .convert:
-            ("Convert", ["JPG", "PNG", "HEIC", "TIFF", "PDF"].map { WheelItem(title: $0, symbol: "photo") })
+            (
+                "Convert",
+                registry.formats(for: trigger.files).map {
+                    WheelItem(title: $0.title, symbol: $0.symbol, action: .convert($0))
+                }
+            )
         case .actions:
             (
                 "Actions",
                 [
-                    WheelItem(title: "Copy Path", symbol: "doc.on.clipboard"),
-                    WheelItem(title: "AirDrop", symbol: "dot.radiowaves.left.and.right"),
-                    WheelItem(title: "Terminal", symbol: "terminal"),
+                    WheelItem(title: "Copy Path", symbol: "doc.on.clipboard", action: .placeholder),
+                    WheelItem(title: "AirDrop", symbol: "dot.radiowaves.left.and.right", action: .placeholder),
+                    WheelItem(title: "Terminal", symbol: "terminal", action: .placeholder),
                 ]
             )
         }
