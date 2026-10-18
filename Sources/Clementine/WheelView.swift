@@ -2,7 +2,7 @@ import SwiftUI
 
 enum WheelAction: Hashable {
     case convert(OutputFormat)
-    case placeholder
+    case quickAction(QuickAction)
 }
 
 struct WheelItem: Hashable {

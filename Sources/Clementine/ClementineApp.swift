@@ -40,9 +40,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                         logger.error("Failure notification not posted: \(String(describing: error), privacy: .public)")
                     }
                 }
-            case .placeholder:
-                let paths = files.map(\.path).joined(separator: ", ")
-                logger.notice("\(item.title, privacy: .public): \(paths, privacy: .public)")
+            case .quickAction(let action):
+                Task {
+                    do {
+                        try await action.perform(on: files)
+                    } catch {
+                        logger.error("\(action.title, privacy: .public) failed: \(String(describing: error), privacy: .public)")
+                    }
+                }
             }
         }
         let monitor = DragMonitor(
@@ -75,11 +80,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case .actions:
             (
                 "Actions",
-                [
-                    WheelItem(title: "Copy Path", symbol: "doc.on.clipboard", action: .placeholder),
-                    WheelItem(title: "AirDrop", symbol: "dot.radiowaves.left.and.right", action: .placeholder),
-                    WheelItem(title: "Terminal", symbol: "terminal", action: .placeholder),
-                ]
+                QuickAction.allCases.map { WheelItem(title: $0.title, symbol: $0.symbol, action: .quickAction($0)) }
             )
         }
     }

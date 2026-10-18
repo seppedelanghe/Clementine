@@ -16,7 +16,6 @@ bundled.
 
 - **Copy Path** — copies the paths of the dragged files, one per line.
 - **AirDrop** — opens the AirDrop share sheet with the dragged files.
-- **Open in Terminal** — opens Terminal in the dragged folder, or in the parent folder of a file.
 
 ## Behaviour
 
