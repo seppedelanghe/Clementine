@@ -27,10 +27,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             switch item.action {
             case .convert(let format):
                 Task {
-                    for failure in await runner.run(files, to: format) {
+                    let failures = await runner.run(files, to: format)
+                    guard !failures.isEmpty else { return }
+                    for failure in failures {
                         logger.error(
                             "\(failure.file.path, privacy: .public): \(String(describing: failure.error), privacy: .public)"
                         )
+                    }
+                    do {
+                        try await FailureNotification.post(failures, to: format)
+                    } catch {
+                        logger.error("Failure notification not posted: \(String(describing: error), privacy: .public)")
                     }
                 }
             case .placeholder:

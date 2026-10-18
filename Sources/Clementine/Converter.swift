@@ -1,11 +1,20 @@
 import Foundation
 import UniformTypeIdentifiers
 
-enum ConversionError: Error {
+enum ConversionError: LocalizedError {
     case unreadableSource
     case unsupportedSource
     case encoderUnavailable
     case writeFailed
+
+    var errorDescription: String? {
+        switch self {
+        case .unreadableSource: "The file could not be read."
+        case .unsupportedSource: "The file changed before it could be converted."
+        case .encoderUnavailable: "This Mac can't write this format."
+        case .writeFailed: "The converted file could not be written."
+        }
+    }
 }
 
 protocol Converter: Sendable {
