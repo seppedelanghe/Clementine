@@ -7,6 +7,7 @@ enum ConversionError: LocalizedError {
     case noAudioTrack
     case encoderUnavailable
     case writeFailed
+    case ffmpegFailed(String)
 
     var errorDescription: String? {
         switch self {
@@ -15,6 +16,7 @@ enum ConversionError: LocalizedError {
         case .noAudioTrack: "The file has no audio track."
         case .encoderUnavailable: "This Mac can't write this format."
         case .writeFailed: "The converted file could not be written."
+        case .ffmpegFailed(let message): message.isEmpty ? "The conversion failed." : message
         }
     }
 }

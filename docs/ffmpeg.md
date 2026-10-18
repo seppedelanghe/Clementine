@@ -120,9 +120,10 @@ Settings other than OGG were tested against a local ffmpeg 9.0.1.
 
 - `.mkv` has no system UTType (it resolves to a dynamic type conforming to neither `.movie` nor
   `.audio`), so `Info.plist` needs a `UTImportedTypeDeclarations` entry for it.
-- `.opus` resolves to `org.xiph.ogg-audio`, the same type as `.ogg`, so under the
-  never-convert-to-itself rule OGG and Opus would never be offered to each other unless Opus is
-  declared as its own type.
+- `.opus` resolves to `org.xiph.ogg-audio`, and macOS 27 also declares `org.xiph.opus` with the
+  same extensions, so an Ogg file conforms to Opus. Under the never-convert-to-itself rule OGG
+  and Opus are never offered to each other; a declaration in Clementine's `Info.plist` doesn't
+  override the system's.
 - Checked on macOS 27 only; resolution may differ on macOS 14.
 
 ## Size

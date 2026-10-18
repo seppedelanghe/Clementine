@@ -1,8 +1,8 @@
 # Scope
 
 The first version exists to get the app shell right: drag detection, the wheel, the converter
-registry and file handling. It deliberately uses only macOS system frameworks — nothing is
-bundled.
+registry and file handling. macOS system frameworks handle what they can; a bundled LGPL ffmpeg
+(see `docs/ffmpeg.md`) takes every other audio and video conversion.
 
 ## Convert wheel (Shift)
 
@@ -11,6 +11,8 @@ bundled.
 | Images | JPG, PNG, HEIC, TIFF, GIF, BMP, WebP | JPG, PNG, HEIC, TIFF, PDF | ImageIO      |
 | Video  | MOV, MP4, M4V                      | MP4, MOV, M4A (audio only) | AVFoundation |
 | Audio  | MP3, M4A, WAV, AIFF, AAC, FLAC     | M4A, WAV, AIFF, FLAC       | AVFoundation |
+| Video  | Any movie ffmpeg reads (MKV, WebM, AVI, WMV, …) | MP4, MOV, MKV, WebM, AVI, WMV, GIF, M4A, MP3 | ffmpeg |
+| Audio  | Any audio ffmpeg reads (OGG, Opus, WMA, …) | MP3, M4A, WAV, AIFF, FLAC, OGG, Opus, WMA | ffmpeg |
 
 ## Quick actions wheel (Control)
 
@@ -35,7 +37,6 @@ Each of these is a later, self-contained addition to the converter registry or t
 | Item                                           | Planned approach                                  |
 |------------------------------------------------|---------------------------------------------------|
 | WebP, AVIF, JXL output                         | libwebp, libavif, libjxl                          |
-| MP3 output, MKV, WebM, OGG, Opus, AVI, GIF from video | Bundled ffmpeg                             |
 | Archives (ZIP, TAR, GZIP; RAR and 7z input)    | System `bsdtar` / libarchive, 7-Zip for 7z        |
 | Subtitles (SRT, VTT, TXT)                      | Own parser                                        |
 | Text documents (DOCX, RTF, HTML, MD, TXT, PDF) | NSAttributedString and PDFKit, pandoc if needed   |

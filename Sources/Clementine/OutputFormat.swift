@@ -17,9 +17,49 @@ extension OutputFormat {
 
     static let mp4 = OutputFormat(title: "MP4", type: .mpeg4Movie, fileExtension: "mp4", symbol: "film")
     static let mov = OutputFormat(title: "MOV", type: .quickTimeMovie, fileExtension: "mov", symbol: "film")
+    static let mkv = OutputFormat(
+        title: "MKV",
+        type: UTType(importedAs: "org.matroska.mkv", conformingTo: .movie),
+        fileExtension: "mkv",
+        symbol: "film"
+    )
+    static let webm = OutputFormat(
+        title: "WebM",
+        type: UTType(importedAs: "org.webmproject.webm", conformingTo: .movie),
+        fileExtension: "webm",
+        symbol: "film"
+    )
+    static let avi = OutputFormat(title: "AVI", type: .avi, fileExtension: "avi", symbol: "film")
+    static let wmv = OutputFormat(
+        title: "WMV",
+        type: UTType(importedAs: "com.microsoft.windows-media-wmv", conformingTo: .movie),
+        fileExtension: "wmv",
+        symbol: "film"
+    )
+    static let gif = OutputFormat(title: "GIF", type: .gif, fileExtension: "gif", symbol: "film")
 
     static let m4a = OutputFormat(title: "M4A", type: .mpeg4Audio, fileExtension: "m4a", symbol: "waveform")
     static let wav = OutputFormat(title: "WAV", type: .wav, fileExtension: "wav", symbol: "waveform")
     static let aiff = OutputFormat(title: "AIFF", type: .aiff, fileExtension: "aiff", symbol: "waveform")
     static let flac = OutputFormat(title: "FLAC", type: UTType("org.xiph.flac")!, fileExtension: "flac", symbol: "waveform")
+    static let mp3 = OutputFormat(title: "MP3", type: .mp3, fileExtension: "mp3", symbol: "waveform")
+    static let ogg = OutputFormat(
+        title: "OGG",
+        type: UTType(importedAs: "org.xiph.ogg-audio", conformingTo: .audio),
+        fileExtension: "ogg",
+        symbol: "waveform"
+    )
+    // Recent macOS treats .ogg and .opus as one type, so these two are never offered to each other.
+    static let opus = OutputFormat(
+        title: "Opus",
+        type: UTType(importedAs: "org.xiph.opus", conformingTo: .audio),
+        fileExtension: "opus",
+        symbol: "waveform"
+    )
+    static let wma = OutputFormat(
+        title: "WMA",
+        type: UTType(importedAs: "com.microsoft.windows-media-wma", conformingTo: .audio),
+        fileExtension: "wma",
+        symbol: "waveform"
+    )
 }
