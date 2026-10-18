@@ -29,7 +29,7 @@ wheel is cancelled with Escape; dropping anywhere outside it is an ordinary drop
 
 - Open source, released as a signed app on GitHub Releases. Sparkle for updates if needed.
 - Not sandboxed, not on the Mac App Store.
-- Minimum macOS 14.
+- Minimum macOS 14, Apple silicon only.
 
 ## Non-goals
 
