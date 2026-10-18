@@ -14,4 +14,11 @@ extension OutputFormat {
     static let heic = OutputFormat(title: "HEIC", type: .heic, fileExtension: "heic", symbol: "photo")
     static let tiff = OutputFormat(title: "TIFF", type: .tiff, fileExtension: "tiff", symbol: "photo")
     static let pdf = OutputFormat(title: "PDF", type: .pdf, fileExtension: "pdf", symbol: "doc.richtext")
+
+    static let mp4 = OutputFormat(title: "MP4", type: .mpeg4Movie, fileExtension: "mp4", symbol: "film")
+    static let mov = OutputFormat(title: "MOV", type: .quickTimeMovie, fileExtension: "mov", symbol: "film")
+
+    static let m4a = OutputFormat(title: "M4A", type: .mpeg4Audio, fileExtension: "m4a", symbol: "waveform")
+    static let wav = OutputFormat(title: "WAV", type: .wav, fileExtension: "wav", symbol: "waveform")
+    static let aiff = OutputFormat(title: "AIFF", type: .aiff, fileExtension: "aiff", symbol: "waveform")
 }

@@ -4,6 +4,7 @@ import UniformTypeIdentifiers
 enum ConversionError: LocalizedError {
     case unreadableSource
     case unsupportedSource
+    case noAudioTrack
     case encoderUnavailable
     case writeFailed
 
@@ -11,6 +12,7 @@ enum ConversionError: LocalizedError {
         switch self {
         case .unreadableSource: "The file could not be read."
         case .unsupportedSource: "The file changed before it could be converted."
+        case .noAudioTrack: "The file has no audio track."
         case .encoderUnavailable: "This Mac can't write this format."
         case .writeFailed: "The converted file could not be written."
         }
