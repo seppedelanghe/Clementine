@@ -27,7 +27,7 @@ show their progress in the menu bar.
 | Video: MP4, MOV, MKV, WebM, AVI, WMV, … | MP4, MOV, MKV, WebM, AVI, WMV, GIF, M4A, MP3 |
 | Audio: MP3, M4A, WAV, AIFF, FLAC, OGG, Opus, WMA, … | MP3, M4A, WAV, AIFF, FLAC, OGG, Opus, WMA |
 
-Actions: **Copy Path** and **AirDrop**.
+Actions: **Copy**, **Copy Path** and **AirDrop**.
 
 ## Requirements
 

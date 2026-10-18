@@ -16,6 +16,7 @@ registry and file handling. macOS system frameworks handle what they can; a bund
 
 ## Quick actions wheel (Control)
 
+- **Copy** — copies the dragged files themselves, like Copy in Finder.
 - **Copy Path** — copies the paths of the dragged files, one per line.
 - **AirDrop** — opens the AirDrop share sheet with the dragged files.
 
@@ -41,7 +42,7 @@ Each of these is a later, self-contained addition to the converter registry or t
 | Subtitles (SRT, VTT, TXT)                      | Own parser                                        |
 | Text documents (DOCX, RTF, HTML, MD, TXT, PDF) | NSAttributedString and PDFKit, pandoc if needed   |
 | Office and iWork documents                     | Undecided; high-fidelity rendering is costly      |
-| Copy and Move actions                          | Folder picker                                     |
+| Move action                                    | Folder picker                                     |
 | Float (a floating shelf of files)              | Own window                                        |
 | Keyboard path (Enter on a Finder selection)    | Needs Finder selection access                     |
 
