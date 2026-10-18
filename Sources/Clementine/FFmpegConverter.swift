@@ -6,9 +6,14 @@ struct FFmpegVideoConverter: Converter {
     let inputs: [UTType] = [.movie]
     let outputs: [OutputFormat] = [.mp4, .mov, .mkv, .webm, .avi, .wmv, .gif, .m4a, .mp3]
 
-    func convert(_ source: URL, to format: OutputFormat, destination: URL) async throws {
+    func convert(
+        _ source: URL,
+        to format: OutputFormat,
+        destination: URL,
+        progress: @escaping ProgressHandler
+    ) async throws {
         assert(outputs.contains(format))
-        try await FFmpeg.convert(source, to: format, destination: destination)
+        try await FFmpeg.convert(source, to: format, destination: destination, progress: progress)
     }
 }
 
@@ -16,15 +21,25 @@ struct FFmpegAudioConverter: Converter {
     let inputs: [UTType] = [.audio]
     let outputs: [OutputFormat] = [.mp3, .m4a, .wav, .aiff, .flac, .ogg, .opus, .wma]
 
-    func convert(_ source: URL, to format: OutputFormat, destination: URL) async throws {
+    func convert(
+        _ source: URL,
+        to format: OutputFormat,
+        destination: URL,
+        progress: @escaping ProgressHandler
+    ) async throws {
         assert(outputs.contains(format))
-        try await FFmpeg.convert(source, to: format, destination: destination)
+        try await FFmpeg.convert(source, to: format, destination: destination, progress: progress)
     }
 }
 
 enum FFmpeg {
-    static func convert(_ source: URL, to format: OutputFormat, destination: URL) async throws {
-        try await run(["-i", source.path] + arguments(for: format) + [destination.path])
+    static func convert(
+        _ source: URL,
+        to format: OutputFormat,
+        destination: URL,
+        progress: @escaping ProgressHandler
+    ) async throws {
+        try await run(["-i", source.path] + arguments(for: format) + [destination.path], progress: progress)
     }
 
     // Fixed defaults per output; docs/ffmpeg.md has the reasoning. The muxer is always explicit
@@ -65,13 +80,18 @@ enum FFmpeg {
         return ["-sn", "-dn"] + streams
     }
 
-    private static func run(_ arguments: [String]) async throws {
+    private static func run(_ arguments: [String], progress: ProgressHandler) async throws {
         guard let executable = Bundle.main.url(forAuxiliaryExecutable: "ffmpeg") else {
             preconditionFailure("ffmpeg is missing from the app bundle")
         }
         let process = Process()
         process.executableURL = executable
-        process.arguments = ["-nostdin", "-hide_banner", "-loglevel", "error", "-y"] + arguments
+        // Progress goes to stderr too, so one reader sees the input's duration before the
+        // out_time_us lines that need it. Log lines are tagged with their level to pick out errors.
+        process.arguments = [
+            "-nostdin", "-hide_banner", "-nostats", "-loglevel", "level+info",
+            "-progress", "pipe:2", "-stats_period", "0.5", "-y",
+        ] + arguments
         process.standardOutput = FileHandle.nullDevice
         let errors = Pipe()
         process.standardError = errors
@@ -85,14 +105,29 @@ enum FFmpeg {
         try process.run()
 
         // Drained while ffmpeg runs: a damaged file can log enough to fill the pipe and stall it.
-        // ffmpeg states the cause first and ends with generic summaries, so the opening lines are kept.
-        var lines: [String] = []
-        for try await line in errors.fileHandleForReading.bytes.lines where lines.count < 50 {
-            lines.append(line)
+        // ffmpeg states the cause first and ends with generic summaries, so the first errors are kept.
+        var errorLines: [String] = []
+        var duration: Double?
+        for try await line in errors.fileHandleForReading.bytes.lines {
+            if line.hasPrefix("out_time_us="), let duration, let microseconds = Double(line.dropFirst(12)) {
+                progress(min(microseconds / 1_000_000 / duration, 1))
+            } else if duration == nil, let range = line.range(of: "Duration: ") {
+                duration = seconds(line[range.upperBound...].prefix(11))
+            } else if line.contains("[error] ") || line.contains("[fatal] "), errorLines.count < 50 {
+                errorLines.append(line)
+            }
         }
         for await status in exits where status != 0 {
-            throw error(from: lines)
+            throw error(from: errorLines)
         }
+    }
+
+    // "HH:MM:SS.xx" as printed in ffmpeg's Duration line; nil for "N/A" or a zero length.
+    private static func seconds(_ timestamp: Substring) -> Double? {
+        let parts = timestamp.split(separator: ":").compactMap { Double($0) }
+        guard parts.count == 3 else { return nil }
+        let total = parts[0] * 3600 + parts[1] * 60 + parts[2]
+        return total > 0 ? total : nil
     }
 
     private static func error(from lines: [String]) -> ConversionError {
@@ -100,11 +135,11 @@ enum FFmpeg {
             return .unreadableSource
         }
         if lines.contains(where: { $0.contains("does not contain any stream") }) { return .noAudioTrack }
-        guard let first = lines.first else { return .ffmpegFailed("") }
-        // Drop ffmpeg's "[component @ 0x…] " prefix; it means nothing to the user.
-        if first.hasPrefix("["), let end = first.range(of: "] ") {
-            return .ffmpegFailed(String(first[end.upperBound...]))
+        guard var message = lines.first.map({ Substring($0) }) else { return .ffmpegFailed("") }
+        // Drop the "[component @ 0x…] [error] " tags; they mean nothing to the user.
+        while message.hasPrefix("["), let end = message.range(of: "] ") {
+            message = message[end.upperBound...]
         }
-        return .ffmpegFailed(first)
+        return .ffmpegFailed(String(message))
     }
 }

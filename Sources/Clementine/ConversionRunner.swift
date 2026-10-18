@@ -9,11 +9,17 @@ struct ConversionRunner: Sendable {
     let registry: ConverterRegistry
 
     // Files convert one after another so outputs that would share a name get distinct numbers.
-    func run(_ files: [URL], to format: OutputFormat) async -> [ConversionFailure] {
+    // `progress` receives the index of the file being converted and how far along it is.
+    func run(
+        _ files: [URL],
+        to format: OutputFormat,
+        progress: @escaping @Sendable (_ fileIndex: Int, _ fraction: Double) -> Void
+    ) async -> [ConversionFailure] {
         var failures: [ConversionFailure] = []
-        for file in files {
+        for (index, file) in files.enumerated() {
+            progress(index, 0)
             do {
-                try await convert(file, to: format)
+                try await convert(file, to: format) { progress(index, $0) }
             } catch {
                 failures.append(ConversionFailure(file: file, error: error))
             }
@@ -23,7 +29,7 @@ struct ConversionRunner: Sendable {
 
     // Converts into a temporary folder on the same volume and moves the result into place,
     // so a failed conversion never leaves a partial file beside the original.
-    private func convert(_ file: URL, to format: OutputFormat) async throws {
+    private func convert(_ file: URL, to format: OutputFormat, progress: @escaping ProgressHandler) async throws {
         guard let converter = registry.converter(for: file, to: format) else {
             throw ConversionError.unsupportedSource
         }
@@ -38,7 +44,7 @@ struct ConversionRunner: Sendable {
         defer { try? FileManager.default.removeItem(at: workspace) }
 
         let temporary = workspace.appending(path: "output.\(format.fileExtension)")
-        try await converter.convert(file, to: format, destination: temporary)
+        try await converter.convert(file, to: format, destination: temporary, progress: progress)
         try FileManager.default.moveItem(at: temporary, to: Self.availableDestination(for: file, as: format))
     }
 

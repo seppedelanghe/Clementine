@@ -21,11 +21,14 @@ enum ConversionError: LocalizedError {
     }
 }
 
+// Fraction of the current file done, 0...1. Converters that finish quickly never call it.
+typealias ProgressHandler = @Sendable (Double) -> Void
+
 protocol Converter: Sendable {
     var inputs: [UTType] { get }
     var outputs: [OutputFormat] { get }
 
-    func convert(_ source: URL, to format: OutputFormat, destination: URL) async throws
+    func convert(_ source: URL, to format: OutputFormat, destination: URL, progress: @escaping ProgressHandler) async throws
 }
 
 struct ConverterRegistry: Sendable {

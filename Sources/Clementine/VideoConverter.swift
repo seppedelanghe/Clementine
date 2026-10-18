@@ -5,11 +5,16 @@ struct VideoConverter: Converter {
     let inputs: [UTType] = [.quickTimeMovie, .mpeg4Movie]
     let outputs: [OutputFormat] = [.mp4, .mov, .m4a]
 
-    func convert(_ source: URL, to format: OutputFormat, destination: URL) async throws {
+    func convert(
+        _ source: URL,
+        to format: OutputFormat,
+        destination: URL,
+        progress: @escaping ProgressHandler
+    ) async throws {
         assert(outputs.contains(format))
         switch format {
         case .m4a:
-            try await MediaExport.exportAudio(source, to: destination)
+            try await MediaExport.exportAudio(source, to: destination, progress: progress)
         default:
             let fileType: AVFileType = format == .mp4 ? .mp4 : .mov
             // Rewrapping the existing streams is lossless and fast, but only works when the codecs
@@ -20,7 +25,7 @@ struct VideoConverter: Converter {
                 outputFileType: fileType
             )
             let preset = canRewrap ? AVAssetExportPresetPassthrough : AVAssetExportPresetHighestQuality
-            try await MediaExport.export(source, preset: preset, as: fileType, to: destination)
+            try await MediaExport.export(source, preset: preset, as: fileType, to: destination, progress: progress)
         }
     }
 }

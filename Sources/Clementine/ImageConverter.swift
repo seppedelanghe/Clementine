@@ -10,7 +10,12 @@ struct ImageConverter: Converter {
     let outputs: [OutputFormat] = [.jpeg, .png, .heic, .tiff, .pdf]
 
     // Only the first frame is converted, so an animated GIF becomes a still image.
-    func convert(_ source: URL, to format: OutputFormat, destination: URL) async throws {
+    func convert(
+        _ source: URL,
+        to format: OutputFormat,
+        destination: URL,
+        progress: @escaping ProgressHandler
+    ) async throws {
         assert(outputs.contains(format))
         guard
             let imageSource = CGImageSourceCreateWithURL(source as CFURL, nil),

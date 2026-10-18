@@ -6,16 +6,41 @@ struct ClementineApp: App {
     @NSApplicationDelegateAdaptor private var appDelegate: AppDelegate
 
     var body: some Scene {
-        MenuBarExtra("Clementine", systemImage: "arrow.triangle.2.circlepath") {
+        let activity = appDelegate.activity
+        MenuBarExtra {
+            ForEach(activity.visibleJobs) { job in
+                Text(Self.describe(job))
+            }
+            if !activity.visibleJobs.isEmpty {
+                Divider()
+            }
             Button("Quit Clementine") {
                 NSApplication.shared.terminate(nil)
             }
             .keyboardShortcut("q")
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: "arrow.triangle.2.circlepath")
+                if let fraction = activity.fraction {
+                    Text(fraction.formatted(.percent.precision(.fractionLength(0))))
+                        .monospacedDigit()
+                }
+            }
         }
+    }
+
+    // "clip.mkv → MP4 (2 of 3) · 42%"
+    private static func describe(_ job: ConversionActivity.Job) -> String {
+        let file = job.files[job.fileIndex].lastPathComponent
+        let count = job.files.count > 1 ? " (\(job.fileIndex + 1) of \(job.files.count))" : ""
+        let percent = job.fraction.formatted(.percent.precision(.fractionLength(0)))
+        return "\(file) → \(job.format.title)\(count) · \(percent)"
     }
 }
 
+@MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    let activity = ConversionActivity()
     private let logger = Logger(subsystem: "be.seppedelanghe.clementine", category: "wheel")
     private let registry = ConverterRegistry(converters: [
         ImageConverter(), VideoConverter(), AudioConverter(), FFmpegVideoConverter(), FFmpegAudioConverter(),
@@ -25,11 +50,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let runner = ConversionRunner(registry: registry)
-        let wheel = WheelController { [logger] item, files in
+        let wheel = WheelController { [logger, activity] item, files in
             switch item.action {
             case .convert(let format):
                 Task {
-                    let failures = await runner.run(files, to: format)
+                    let job = activity.begin(files, to: format)
+                    let failures = await runner.run(files, to: format) { fileIndex, fraction in
+                        Task { @MainActor in activity.update(job, fileIndex: fileIndex, fileFraction: fraction) }
+                    }
+                    activity.end(job)
                     guard !failures.isEmpty else { return }
                     for failure in failures {
                         logger.error(
