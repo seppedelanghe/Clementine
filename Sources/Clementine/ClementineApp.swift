@@ -17,6 +17,7 @@ struct ClementineApp: App {
 
     var body: some Scene {
         let activity = appDelegate.activity
+        let loginItem = appDelegate.loginItem
         MenuBarExtra {
             ForEach(activity.visibleJobs) { job in
                 Text(Self.describe(job))
@@ -24,6 +25,12 @@ struct ClementineApp: App {
             if !activity.visibleJobs.isEmpty {
                 Divider()
             }
+            Toggle("Launch at Login", isOn: Binding(get: { loginItem.isEnabled }, set: loginItem.setEnabled))
+            if loginItem.needsApproval {
+                Button("Allow in Login Items…") { loginItem.openSystemSettings() }
+            }
+            SettingsButton()
+            Divider()
             Button("Quit Clementine") {
                 NSApplication.shared.terminate(nil)
             }
@@ -37,6 +44,9 @@ struct ClementineApp: App {
                 }
             }
         }
+        Settings {
+            SettingsView(loginItem: loginItem)
+        }
     }
 
     // "clip.mkv → MP4 (2 of 3) · 42%"
@@ -48,9 +58,23 @@ struct ClementineApp: App {
     }
 }
 
+private struct SettingsButton: View {
+    @Environment(\.openSettings) private var openSettings
+
+    var body: some View {
+        Button("Settings…") {
+            // A menu bar app isn't active, so its windows would open behind the frontmost app.
+            NSApp.activate()
+            openSettings()
+        }
+        .keyboardShortcut(",")
+    }
+}
+
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let activity = ConversionActivity()
+    let loginItem = LoginItem()
     private let logger = Logger(subsystem: "be.seppedelanghe.clementine", category: "wheel")
     private let registry = ConverterRegistry(converters: [
         ImageConverter(), VideoConverter(), AudioConverter(), FFmpegVideoConverter(), FFmpegAudioConverter(),
@@ -92,7 +116,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
         let monitor = DragMonitor(
-            bindings: [.convert: .shift, .actions: .control],
+            bindings: { Dictionary(uniqueKeysWithValues: Wheel.allCases.map { ($0, $0.modifier.flags) }) },
             onTrigger: { [registry] trigger in
                 let (title, items) = Self.wheelContent(for: trigger, registry: registry)
                 // A wheel with nothing to offer would only block the ordinary drop underneath it.

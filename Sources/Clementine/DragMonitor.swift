@@ -1,6 +1,6 @@
 import AppKit
 
-enum Wheel {
+enum Wheel: CaseIterable {
     case convert
     case actions
 }
@@ -13,17 +13,19 @@ struct DragTrigger {
 
 @MainActor
 final class DragMonitor {
-    private let bindings: [Wheel: NSEvent.ModifierFlags]
+    private let bindings: () -> [Wheel: NSEvent.ModifierFlags]
     private let onTrigger: (DragTrigger) -> Void
     private let onDragEnd: () -> Void
     private let dragPasteboard = NSPasteboard(name: .drag)
     private var seenChangeCount = 0
     private var draggedFiles: [URL] = []
     private var heldModifiers: NSEvent.ModifierFlags = []
+    private var activeBindings: [Wheel: NSEvent.ModifierFlags] = [:]
     private var modifierPoll: Timer?
 
+    // `bindings` is read at the start of each drag, so changes in Settings apply to the next one.
     init(
-        bindings: [Wheel: NSEvent.ModifierFlags],
+        bindings: @escaping () -> [Wheel: NSEvent.ModifierFlags],
         onTrigger: @escaping (DragTrigger) -> Void,
         onDragEnd: @escaping () -> Void
     ) {
@@ -60,6 +62,7 @@ final class DragMonitor {
         guard let urls, !urls.isEmpty else { return }
 
         draggedFiles = urls
+        activeBindings = bindings()
         heldModifiers = currentModifiers()
         modifierPoll = Timer.scheduledTimer(withTimeInterval: 1 / 60, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.poll() }
@@ -76,7 +79,7 @@ final class DragMonitor {
         let current = currentModifiers()
         let pressed = current.subtracting(heldModifiers)
         heldModifiers = current
-        for (wheel, flags) in bindings where pressed.contains(flags) {
+        for (wheel, flags) in activeBindings where pressed.contains(flags) {
             onTrigger(DragTrigger(wheel: wheel, files: draggedFiles, location: NSEvent.mouseLocation))
         }
     }
