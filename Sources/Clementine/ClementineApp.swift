@@ -111,6 +111,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                         try await action.perform(on: files)
                     } catch {
                         logger.error("\(action.title, privacy: .public) failed: \(String(describing: error), privacy: .public)")
+                        do {
+                            try await FailureNotification.post(error, for: action)
+                        } catch {
+                            logger.error("Failure notification not posted: \(String(describing: error), privacy: .public)")
+                        }
                     }
                 }
             }
