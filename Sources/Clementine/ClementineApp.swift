@@ -1,3 +1,4 @@
+import Sparkle
 import SwiftUI
 import os
 
@@ -29,6 +30,7 @@ struct ClementineApp: App {
             if loginItem.needsApproval {
                 Button("Allow in Login Items…") { loginItem.openSystemSettings() }
             }
+            Button("Check for Updates…") { appDelegate.updater.checkForUpdates(nil) }
             SettingsButton()
             Divider()
             Button("Quit Clementine") {
@@ -75,6 +77,7 @@ private struct SettingsButton: View {
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let activity = ConversionActivity()
     let loginItem = LoginItem()
+    let updater = SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: nil, userDriverDelegate: nil)
     private let logger = Logger(subsystem: "be.seppedelanghe.clementine", category: "wheel")
     private let registry = ConverterRegistry(converters: [
         ImageConverter(), VideoConverter(), AudioConverter(), FFmpegVideoConverter(), FFmpegAudioConverter(),

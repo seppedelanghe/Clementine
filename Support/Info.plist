@@ -24,6 +24,10 @@
 	<string>14.0</string>
 	<key>LSUIElement</key>
 	<true/>
+	<key>SUFeedURL</key>
+	<string>https://github.com/seppedelanghe/Clementine/releases/latest/download/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>2YKS5dijnCCTGyYfFio4D4JEACaLTEVlI9tEdpf/tGs=</string>
 	<key>UTImportedTypeDeclarations</key>
 	<array>
 		<dict>

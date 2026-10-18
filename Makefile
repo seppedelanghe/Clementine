@@ -1,6 +1,7 @@
 CONFIG ?= debug
 APP := build/Clementine.app
 FFMPEG := build/ffmpeg/bin/ffmpeg
+SPARKLE := $(APP)/Contents/Frameworks/Sparkle.framework
 # "-" signs ad hoc for local builds; scripts/release.sh passes a Developer ID identity.
 SIGN_IDENTITY ?= -
 # Notarization needs the hardened runtime and a secure timestamp, which ad hoc signing can't provide.
@@ -14,7 +15,7 @@ build:
 # SwiftPM only produces a bare executable; the .app bundle is assembled here.
 app: build $(FFMPEG)
 	rm -rf $(APP)
-	mkdir -p $(APP)/Contents/MacOS $(APP)/Contents/Resources/Licenses
+	mkdir -p $(APP)/Contents/MacOS $(APP)/Contents/Resources/Licenses $(APP)/Contents/Frameworks
 	cp Support/Info.plist $(APP)/Contents/
 	cp assets/clementine-icon.icns $(APP)/Contents/Resources/AppIcon.icns
 	cp assets/clementine-menubar.svg $(APP)/Contents/Resources/
@@ -22,8 +23,14 @@ app: build $(FFMPEG)
 	cp build/ffmpeg/licenses/* $(APP)/Contents/Resources/Licenses/
 	cp "$$(swift build -c $(CONFIG) --show-bin-path)/Clementine" $(APP)/Contents/MacOS/
 	cp $(FFMPEG) $(APP)/Contents/MacOS/
+	ditto "$$(swift build -c $(CONFIG) --show-bin-path)/Sparkle.framework" $(SPARKLE)
+	# Sparkle only uses its XPC services in sandboxed apps; removed so they needn't be signed.
+	rm -rf $(SPARKLE)/XPCServices $(SPARKLE)/Versions/B/XPCServices
 	# Nested code is signed before the bundle that contains it.
 	$(CODESIGN) $(APP)/Contents/MacOS/ffmpeg
+	$(CODESIGN) $(SPARKLE)/Versions/B/Autoupdate
+	$(CODESIGN) $(SPARKLE)/Versions/B/Updater.app
+	$(CODESIGN) $(SPARKLE)
 	$(CODESIGN) $(APP)
 
 run: app
