@@ -20,17 +20,26 @@ struct ArchiveConverter: Converter {
         progress: @escaping ProgressHandler
     ) async throws {
         assert(outputs.contains(format))
-        let options: [String] =
-            switch format {
-            case .zip: ["--format", "zip"]
-            case .sevenZip: ["--format", "7zip"]
-            // bsdtar's default, restricted pax, holds long names and large files and reads everywhere.
-            case .tar: []
-            case .tarGz: ["-z"]
-            case .tarXz: ["-J"]
-            default: preconditionFailure("No bsdtar options for \(format.title)")
-            }
-        try await BSDTar.run(["-c", "-f", destination.path] + options + ["@\(source.path)"])
+        try await BSDTar.run(["-c", "-f", destination.path] + BSDTar.options(for: format) + ["@\(source.path)"])
+    }
+}
+
+struct FolderConverter: Converter {
+    // Not .directory, which includes apps and other packages.
+    let inputs: [UTType] = [.folder]
+    let outputs: [OutputFormat] = [.zip, .sevenZip, .tarGz, .tarXz]
+
+    func convert(
+        _ source: URL,
+        to format: OutputFormat,
+        destination: URL,
+        progress: @escaping ProgressHandler
+    ) async throws {
+        assert(outputs.contains(format))
+        try await BSDTar.run(
+            ["-c", "-f", destination.path] + BSDTar.options(for: format) + BSDTar.fromDisk
+                + ["-C", source.deletingLastPathComponent().path, source.lastPathComponent]
+        )
     }
 }
 
@@ -43,6 +52,21 @@ private extension UTType {
 }
 
 enum BSDTar {
+    // Archives of files on disk are meant for any system, so they leave out what only a Mac uses.
+    static let fromDisk = ["--no-mac-metadata", "--exclude", ".DS_Store"]
+
+    static func options(for format: OutputFormat) -> [String] {
+        switch format {
+        case .zip: ["--format", "zip"]
+        case .sevenZip: ["--format", "7zip"]
+        // bsdtar's default, restricted pax, holds long names and large files and reads everywhere.
+        case .tar: []
+        case .tarGz: ["-z"]
+        case .tarXz: ["-J"]
+        default: preconditionFailure("No bsdtar options for \(format.title)")
+        }
+    }
+
     static func run(_ arguments: [String]) async throws {
         let process = Process()
         process.executableURL = URL(filePath: "/usr/bin/tar")

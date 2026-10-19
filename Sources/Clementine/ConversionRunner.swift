@@ -46,7 +46,7 @@ struct ConversionRunner: Sendable {
         let temporary = workspace.appending(path: "output.\(format.fileExtension)")
         try await converter.convert(file, to: format, destination: temporary, progress: progress)
         let destination = FileManager.default.availableURL(
-            base: FileManager.baseName(of: file.lastPathComponent),
+            base: try FileManager.baseName(of: file),
             suffix: ".\(format.fileExtension)",
             in: directory
         )
@@ -67,7 +67,10 @@ extension FileManager {
     }
 
     // "name.tar.gz" has the base name "name", so it converts to "name.zip", not "name.tar.zip".
-    static func baseName(of name: String) -> String {
+    // A folder's base name is its whole name, dots included.
+    static func baseName(of item: URL) throws -> String {
+        let name = item.lastPathComponent
+        if try item.resourceValues(forKeys: [.isDirectoryKey]).isDirectory == true { return name }
         var base = (name as NSString).deletingPathExtension
         if base.hasSuffix(".tar") { base.removeLast(4) }
         return base

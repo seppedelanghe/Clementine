@@ -20,6 +20,7 @@ enum QuickAction: CaseIterable {
     case copy
     case copyPath
     case airDrop
+    case compress
     case extract
 
     var title: String {
@@ -27,6 +28,7 @@ enum QuickAction: CaseIterable {
         case .copy: "Copy"
         case .copyPath: "Copy Path"
         case .airDrop: "AirDrop"
+        case .compress: "Compress"
         case .extract: "Extract"
         }
     }
@@ -36,13 +38,14 @@ enum QuickAction: CaseIterable {
         case .copy: "doc.on.doc"
         case .copyPath: "doc.on.clipboard"
         case .airDrop: "dot.radiowaves.left.and.right"
+        case .compress: "doc.zipper"
         case .extract: "archivebox"
         }
     }
 
     func isAvailable(for files: [URL]) -> Bool {
         switch self {
-        case .copy, .copyPath, .airDrop: true
+        case .copy, .copyPath, .airDrop, .compress: true
         case .extract:
             files.allSatisfy { file in
                 guard let type = try? file.resourceValues(forKeys: [.contentTypeKey]).contentType else { return false }
@@ -75,11 +78,38 @@ enum QuickAction: CaseIterable {
             NSApp.activate()
             service.perform(withItems: files)
 
+        case .compress:
+            try await Self.compress(files)
+
         case .extract:
             for archive in files {
                 try await Self.extract(archive)
             }
         }
+    }
+
+    // Like Compress in Finder: one item becomes "name.zip", keeping its extension, and several
+    // become "Archive.zip" beside the first.
+    private static func compress(_ items: [URL]) async throws {
+        let directory = items[0].deletingLastPathComponent()
+        let workspace = try FileManager.default.url(
+            for: .itemReplacementDirectory,
+            in: .userDomainMask,
+            appropriateFor: directory,
+            create: true
+        )
+        defer { try? FileManager.default.removeItem(at: workspace) }
+        let temporary = workspace.appending(path: "archive.zip")
+        // Each item is added from its own folder, so all of them sit at the archive's top level.
+        let paths = items.flatMap { ["-C", $0.deletingLastPathComponent().path, $0.lastPathComponent] }
+        try await BSDTar.run(["-c", "-f", temporary.path] + BSDTar.options(for: .zip) + BSDTar.fromDisk + paths)
+
+        let destination = FileManager.default.availableURL(
+            base: items.count == 1 ? items[0].lastPathComponent : "Archive",
+            suffix: ".zip",
+            in: directory
+        )
+        try FileManager.default.moveItem(at: temporary, to: destination)
     }
 
     // Like Archive Utility: a single top-level item lands beside the archive as it is, anything
@@ -102,9 +132,7 @@ enum QuickAction: CaseIterable {
         if items.count == 1 {
             let item = items[0]
             let name = item.lastPathComponent
-            let base = try item.resourceValues(forKeys: [.isDirectoryKey]).isDirectory == true
-                ? name
-                : FileManager.baseName(of: name)
+            let base = try FileManager.baseName(of: item)
             let destination = FileManager.default.availableURL(
                 base: base,
                 suffix: String(name.dropFirst(base.count)),
@@ -113,7 +141,7 @@ enum QuickAction: CaseIterable {
             try FileManager.default.moveItem(at: item, to: destination)
         } else {
             let destination = FileManager.default.availableURL(
-                base: FileManager.baseName(of: archive.lastPathComponent),
+                base: try FileManager.baseName(of: archive),
                 suffix: "",
                 in: directory
             )

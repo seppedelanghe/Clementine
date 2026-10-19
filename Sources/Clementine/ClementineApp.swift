@@ -81,7 +81,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let logger = Logger(subsystem: "be.seppedelanghe.clementine", category: "wheel")
     private let registry = ConverterRegistry(converters: [
         ImageConverter(), VideoConverter(), AudioConverter(), FFmpegVideoConverter(), FFmpegAudioConverter(),
-        ArchiveConverter(),
+        ArchiveConverter(), FolderConverter(),
     ])
     private var dragMonitor: DragMonitor?
     private var wheelController: WheelController?
