@@ -166,11 +166,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         for trigger: DragTrigger,
         registry: ConverterRegistry
     ) -> (String, [WheelItem]) {
-        switch trigger.wheel {
+        let formats = registry.formats(for: trigger.files)
+        // A video's audio formats sit under Extract Audio on the actions wheel instead.
+        let audioFormats =
+            trigger.files.allSatisfy(isVideo) ? formats.filter(FFmpegAudioConverter().outputs.contains) : []
+        return switch trigger.wheel {
         case .convert:
             (
                 "Convert",
-                registry.formats(for: trigger.files).map {
+                formats.filter { !audioFormats.contains($0) }.map {
                     WheelItem(title: $0.title, symbol: nil, action: .convert($0))
                 }
             )
@@ -180,8 +184,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 QuickAction.allCases
                     .filter { $0.isAvailable(for: trigger.files) }
                     .map { WheelItem(title: $0.title, symbol: $0.symbol, action: .quickAction($0)) }
-                    + [Shrink.item(for: trigger.files), Rotate.item(for: trigger.files)].compactMap { $0 }
+                    + [
+                        Shrink.item(for: trigger.files),
+                        Rotate.item(for: trigger.files),
+                        audioFormats.isEmpty ? nil : extractAudioItem(audioFormats),
+                    ].compactMap { $0 }
             )
         }
+    }
+
+    private static func extractAudioItem(_ formats: [OutputFormat]) -> WheelItem {
+        let items = formats.map { WheelItem(title: $0.title, symbol: nil, action: .convert($0)) }
+        return WheelItem(title: "Extract Audio", symbol: "waveform", action: .open(items))
+    }
+
+    private static func isVideo(_ file: URL) -> Bool {
+        (try? file.resourceValues(forKeys: [.contentTypeKey]).contentType)?.conforms(to: .movie) == true
     }
 }

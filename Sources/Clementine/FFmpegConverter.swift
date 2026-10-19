@@ -4,7 +4,9 @@ import UniformTypeIdentifiers
 // Registered after the AVFoundation converters, so these only take the pairs those can't handle.
 struct FFmpegVideoConverter: Converter {
     let inputs: [UTType] = [.movie]
-    let outputs: [OutputFormat] = [.mp4, .mov, .mkv, .webm, .avi, .wmv, .gif, .m4a, .mp3]
+    let outputs: [OutputFormat] = [
+        .mp4, .mov, .mkv, .webm, .avi, .wmv, .gif, .mp3, .m4a, .wav, .aiff, .flac, .ogg, .opus, .wma,
+    ]
 
     func convert(
         _ source: URL,
