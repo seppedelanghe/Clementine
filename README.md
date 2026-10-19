@@ -8,7 +8,7 @@ wheel.
 Everything runs locally. Files are never uploaded, and the original is never changed: the
 converted file is saved next to it.
 
-<p align="center"><img src="assets/demo.gif" width="720" alt="A photo converted to HEIC, a ZIP repacked as 7z, and the 7z extracted, each by dropping it on Clementine's wheel"></p>
+<p align="center"><img src="assets/demo.gif" width="720" alt="A photo converted to PNG on the convert wheel, then shrunk to 25% by resting on Shrink in the actions wheel and dropping on 25%"></p>
 
 ## How it works
 
@@ -36,7 +36,8 @@ show their progress in the menu bar.
 | PDF | DOCX, TXT (text only) |
 | Pages (when Pages is installed) | PDF, DOCX, RTF, TXT, EPUB |
 
-Actions: **Copy**, **Copy Path**, **AirDrop**, **Compress** and **Extract**.
+Actions: **Copy**, **Copy Path**, **AirDrop**, **Compress**, **Extract** and **Shrink**, which
+makes a smaller copy of images (25–90%) or videos (1080p, 720p, 480p).
 
 ## Install
 

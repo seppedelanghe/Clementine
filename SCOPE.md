@@ -47,6 +47,13 @@ Known quirks of DOCX → PDF:
   `Archive.zip`.
 - **Extract** — offered when every dragged file is an archive. Like Archive Utility: an archive
   holding a single item extracts to that item, otherwise to a folder named after the archive.
+- **Shrink** — offered when every dragged file is an image (JPG, PNG, HEIC, TIFF, BMP) or every
+  one is a video. Resting on it for half a second turns the wheel into its options; resting on
+  the centre goes back.
+  - Images: 25%, 50%, 75% or 90% of the width and height, same format:
+    `photo.jpg` becomes `photo (50%).jpg`.
+  - Videos: 1080p, 720p or 480p on the shorter side, never enlarged, as HEVC MP4:
+    `clip.mkv` becomes `clip (720p).mp4`.
 
 ## Behaviour
 
