@@ -26,7 +26,7 @@ show their progress in the menu bar.
 | From | To |
 |------|----|
 | Images: JPG, PNG, HEIC, TIFF, GIF, BMP, WebP | JPG, PNG, HEIC, TIFF, PDF |
-| Video: MP4, MOV, MKV, WebM, AVI, WMV, … | MP4, MOV, MKV, WebM, AVI, WMV, GIF, M4A, MP3 |
+| Video: MP4, MOV, MKV, WebM, AVI, WMV, … | MP4, MOV, MKV, WebM, AVI, WMV, GIF |
 | Audio: MP3, M4A, WAV, AIFF, FLAC, OGG, Opus, WMA, … | MP3, M4A, WAV, AIFF, FLAC, OGG, Opus, WMA |
 | Archives: ZIP, 7z, RAR, TAR, TAR.GZ, TAR.BZ2, TAR.XZ | ZIP, 7z, TAR, TAR.GZ, TAR.XZ |
 | Folders | ZIP, 7z, TAR.GZ, TAR.XZ |
@@ -36,8 +36,14 @@ show their progress in the menu bar.
 | PDF | DOCX, TXT (text only) |
 | Pages (when Pages is installed) | PDF, DOCX, RTF, TXT, EPUB |
 
-Actions: **Copy**, **Copy Path**, **AirDrop**, **Compress**, **Extract** and **Shrink**, which
-makes a smaller copy of images (25–90%) or videos (1080p, 720p, 480p).
+Actions:
+
+- **Copy**, **Copy Path**, **AirDrop**, **Compress** and **Extract** for any file
+- **Shrink** images (25–90%) or videos (1080p, 720p, 480p)
+- **Rotate** images and MP4 or MOV videos
+- **Remove Background** from images
+- **Combine into PDF** for images and PDFs
+- **Remove Audio** from videos, or **Extract Audio** to MP3, M4A, WAV, AIFF, FLAC, OGG, Opus or WMA
 
 ## Install
 

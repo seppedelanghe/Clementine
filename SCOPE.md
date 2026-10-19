@@ -11,7 +11,7 @@ ffmpeg (see `docs/ffmpeg.md`) takes every other audio and video conversion.
 | Images | JPG, PNG, HEIC, TIFF, GIF, BMP, WebP | JPG, PNG, HEIC, TIFF, PDF | ImageIO      |
 | Video  | MOV, MP4, M4V                      | MP4, MOV, M4A (audio only) | AVFoundation |
 | Audio  | MP3, M4A, WAV, AIFF, AAC, FLAC     | M4A, WAV, AIFF, FLAC       | AVFoundation |
-| Video  | Any movie ffmpeg reads (MKV, WebM, AVI, WMV, …) | MP4, MOV, MKV, WebM, AVI, WMV, GIF, M4A, MP3 | ffmpeg |
+| Video  | Any movie ffmpeg reads (MKV, WebM, AVI, WMV, …) | MP4, MOV, MKV, WebM, AVI, WMV, GIF, every audio output | ffmpeg |
 | Audio  | Any audio ffmpeg reads (OGG, Opus, WMA, …) | MP3, M4A, WAV, AIFF, FLAC, OGG, Opus, WMA | ffmpeg |
 | Archives | ZIP, 7z, RAR, TAR, TAR.GZ, TAR.BZ2, TAR.XZ | ZIP, 7z, TAR, TAR.GZ, TAR.XZ | System `bsdtar` |
 | Folders | Any folder                         | ZIP, 7z, TAR.GZ, TAR.XZ    | System `bsdtar` |
@@ -20,6 +20,8 @@ ffmpeg (see `docs/ffmpeg.md`) takes every other audio and video conversion.
 | Documents | MD                               | PDF, DOCX, HTML, TXT       | Foundation's Markdown parser, own DOCX writer |
 | Documents | PDF                              | DOCX, TXT                  | PDFKit, own DOCX writer |
 | Documents | Pages                            | PDF, DOCX, RTF, TXT, EPUB  | Pages, only when installed |
+
+A video's audio outputs are offered under Extract Audio on the actions wheel rather than here.
 
 Documents are only offered where the result is good. DOCX → PDF is laid out like Word prints it:
 pages, headers and footers, images, text boxes and shapes, with Calibri and Cambria drawn in their
@@ -54,6 +56,19 @@ Known quirks of DOCX → PDF:
     `photo.jpg` becomes `photo (50%).jpg`.
   - Videos: 1080p, 720p or 480p on the shorter side, never enlarged, as HEVC MP4:
     `clip.mkv` becomes `clip (720p).mp4`.
+- **Rotate** — offered when every dragged file is such an image or an MP4 or MOV video. A
+  sub-wheel of 90° left, 90° right and 180°; `photo.jpg` becomes `photo (Rotated).jpg`.
+  - Images are turned in their pixels and keep their format and colour space.
+  - Videos get a new display rotation, added to their own, with the streams copied as they are.
+    Other containers' rotation flags aren't honoured by players, so they aren't offered.
+- **Remove Background** — offered for images. Vision lifts the subject, as Preview and Photos do,
+  into `photo (No Background).png`.
+- **Combine into PDF** — offered for two or more images and PDFs. Files go in name order, Finder
+  style (`2` before `10`), into `Combined.pdf`: every page of each PDF, one page per image.
+- **Remove Audio** — offered for videos. Every other stream is copied as it is:
+  `clip.mov` becomes `clip (No Audio).mov`.
+- **Extract Audio** — offered when every dragged file is a video. A sub-wheel of every audio
+  format the convert wheel offers for audio, converted like any conversion.
 
 ## Behaviour
 
