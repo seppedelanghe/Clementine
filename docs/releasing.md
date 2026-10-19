@@ -51,7 +51,8 @@ feed from the latest release's `appcast.xml`, so publishing a release is also wh
 
 ## Pinned dependencies
 
-ffmpeg and its libraries (`scripts/build-ffmpeg.sh`), Sparkle (`Package.swift`, `Package.resolved`)
-and Sparkle's tools (`scripts/fetch-sparkle-tools.sh`) are pinned to exact versions and checksums.
+ffmpeg and its libraries (`scripts/build-ffmpeg.sh`), docxide-pdf with its Rust toolchain and
+fonts (`scripts/build-docxide.sh`), Sparkle (`Package.swift`, `Package.resolved`) and Sparkle's
+tools (`scripts/fetch-sparkle-tools.sh`) are pinned to exact versions and checksums.
 Bumping one is a deliberate edit of version and checksum; check upstream security fixes before each
 release, since a pinned version never picks them up on its own.

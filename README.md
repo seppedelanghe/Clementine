@@ -40,14 +40,15 @@ Requires macOS 14 or later on Apple silicon.
 
 ## Building
 
-Needs the Xcode Command Line Tools and `pkg-config` (`brew install pkgconf`). Xcode itself isn't
-needed.
+Needs the Xcode Command Line Tools, `pkg-config` (`brew install pkgconf`) and
+[rustup](https://rustup.rs). Xcode itself isn't needed.
 
 ```sh
 make run   # builds build/Clementine.app and opens it
 ```
 
-The first build also downloads and compiles the bundled ffmpeg, which takes a few minutes.
+The first build also downloads and compiles the bundled ffmpeg and docxide-pdf, which takes a few
+minutes.
 
 ## License
 
