@@ -25,9 +25,12 @@ struct MarkdownConverter: Converter {
             )
         else { throw ConversionError.unreadableSource }
 
-        try await MainActor.run {
-            try TextDocumentConverter.write(MarkdownStyle().render(markdown), attributes: [:], as: format, to: destination)
-        }
+        try await Self.write(markdown, as: format, to: destination)
+    }
+
+    @MainActor
+    private static func write(_ markdown: AttributedString, as format: OutputFormat, to destination: URL) async throws {
+        try await TextDocumentConverter.write(MarkdownStyle().render(markdown), attributes: [:], as: format, to: destination)
     }
 }
 

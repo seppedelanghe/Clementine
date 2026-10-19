@@ -27,10 +27,7 @@ struct DocxConverter: Converter {
                 )
             }
         }
-        try await MainActor.run {
-            let (document, attributes) = try TextDocumentConverter.read(source)
-            try TextDocumentConverter.write(document, attributes: attributes, as: format, to: destination)
-        }
+        try await TextDocumentConverter.convert(source, to: format, destination: destination)
     }
 
     private struct RenderFailure: Error {

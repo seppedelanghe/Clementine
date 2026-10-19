@@ -15,28 +15,31 @@ struct PDFTextConverter: Converter {
         progress: @escaping ProgressHandler
     ) async throws {
         assert(outputs.contains(format))
-        try await MainActor.run {
-            guard let pdf = PDFDocument(url: source) else { throw ConversionError.unreadableSource }
-            guard !pdf.isLocked else { throw ConversionError.passwordProtected }
+        try await Self.convert(source, to: format, destination: destination)
+    }
 
-            let pages = (0..<pdf.pageCount).compactMap { pdf.page(at: $0) }.map(Self.lines(of:))
-            let running = Self.runningLines(in: pages)
-            let document = NSMutableAttributedString()
-            for lines in pages {
-                let text = Self.paragraphs(from: lines.filter { !running.contains(Self.key(for: $0)) })
-                guard text.length > 0 else { continue }
-                // A form feed is a page break in DOCX; plain text gets a blank line.
-                if document.length > 0 { document.append(NSAttributedString(string: format == .txt ? "\n\n" : "\u{0C}")) }
-                document.append(text)
-            }
-            // Scanned pages are images; there is no text to extract without OCR.
-            guard document.length > 0 else { throw ConversionError.noText }
+    @MainActor
+    private static func convert(_ source: URL, to format: OutputFormat, destination: URL) async throws {
+        guard let pdf = PDFDocument(url: source) else { throw ConversionError.unreadableSource }
+        guard !pdf.isLocked else { throw ConversionError.passwordProtected }
 
-            let paragraph = NSMutableParagraphStyle()
-            paragraph.paragraphSpacing = 6
-            document.addAttribute(.paragraphStyle, value: paragraph, range: NSRange(location: 0, length: document.length))
-            try TextDocumentConverter.write(document, attributes: [:], as: format, to: destination)
+        let pages = (0..<pdf.pageCount).compactMap { pdf.page(at: $0) }.map(lines(of:))
+        let running = runningLines(in: pages)
+        let document = NSMutableAttributedString()
+        for lines in pages {
+            let text = paragraphs(from: lines.filter { !running.contains(key(for: $0)) })
+            guard text.length > 0 else { continue }
+            // A form feed is a page break in DOCX; plain text gets a blank line.
+            if document.length > 0 { document.append(NSAttributedString(string: format == .txt ? "\n\n" : "\n\u{0C}")) }
+            document.append(text)
         }
+        // Scanned pages are images; there is no text to extract without OCR.
+        guard document.length > 0 else { throw ConversionError.noText }
+
+        let paragraph = NSMutableParagraphStyle()
+        paragraph.paragraphSpacing = 6
+        document.addAttribute(.paragraphStyle, value: paragraph, range: NSRange(location: 0, length: document.length))
+        try await TextDocumentConverter.write(document, attributes: [:], as: format, to: destination)
     }
 
     private struct Line {

@@ -16,11 +16,14 @@ struct TextDocumentConverter: Converter {
         progress: @escaping ProgressHandler
     ) async throws {
         assert(outputs.contains(format))
-        // The HTML importer and the text view that lays out PDF pages both need the main thread.
-        try await MainActor.run {
-            let (document, attributes) = try Self.read(source)
-            try Self.write(document, attributes: attributes, as: format, to: destination)
-        }
+        try await Self.convert(source, to: format, destination: destination)
+    }
+
+    // The HTML importer and the text view that lays out PDF pages both need the main thread.
+    @MainActor
+    static func convert(_ source: URL, to format: OutputFormat, destination: URL) async throws {
+        let (document, attributes) = try read(source)
+        try await write(document, attributes: attributes, as: format, to: destination)
     }
 
     // Paper size, margins and metadata come along, so the output keeps them where it has room.
@@ -39,15 +42,21 @@ struct TextDocumentConverter: Converter {
         attributes: [NSAttributedString.DocumentAttributeKey: Any],
         as format: OutputFormat,
         to destination: URL
-    ) throws {
-        if format == .pdf {
+    ) async throws {
+        switch format {
+        case .pdf:
             try writePDF(document, attributes: attributes, to: destination)
             return
+        // Cocoa's DOCX writer drops tables and images.
+        case .docx:
+            try await DocxWriter.write(document, attributes: attributes, to: destination)
+            return
+        default:
+            break
         }
         var attributes = attributes
         attributes[.documentType] =
             switch format {
-            case .docx: NSAttributedString.DocumentType.officeOpenXML
             case .rtf: NSAttributedString.DocumentType.rtf
             case .html: NSAttributedString.DocumentType.html
             case .txt: NSAttributedString.DocumentType.plain
