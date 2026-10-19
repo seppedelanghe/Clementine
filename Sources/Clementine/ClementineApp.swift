@@ -82,6 +82,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let registry = ConverterRegistry(converters: [
         ImageConverter(), VideoConverter(), AudioConverter(), FFmpegVideoConverter(), FFmpegAudioConverter(),
         ArchiveConverter(), FolderConverter(), DocxConverter(), MarkdownConverter(), TextDocumentConverter(),
+        PDFTextConverter(),
     ])
     private var dragMonitor: DragMonitor?
     private var wheelController: WheelController?

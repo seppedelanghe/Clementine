@@ -5,8 +5,8 @@ import UniformTypeIdentifiers
 // run belongs to. MarkdownStyle turns those blocks into paragraphs, lists, quotes, code blocks and
 // tables that Cocoa's document writers and the PDF printer understand.
 struct MarkdownConverter: Converter {
-    let inputs: [UTType] = [UTType("net.daringfireball.markdown")!]
-    let outputs: [OutputFormat] = [.pdf, .docx, .rtf, .odt, .html, .txt]
+    let inputs: [UTType] = [.markdown]
+    let outputs: [OutputFormat] = [.pdf, .docx, .html, .txt]
 
     func convert(
         _ source: URL,
@@ -29,6 +29,10 @@ struct MarkdownConverter: Converter {
             try TextDocumentConverter.write(MarkdownStyle().render(markdown), attributes: [:], as: format, to: destination)
         }
     }
+}
+
+extension UTType {
+    static let markdown = UTType("net.daringfireball.markdown")!
 }
 
 @MainActor

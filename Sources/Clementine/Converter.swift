@@ -10,6 +10,7 @@ enum ConversionError: LocalizedError {
     case ffmpegFailed(String)
     case passwordProtected
     case archiveFailed(String)
+    case noText
 
     var errorDescription: String? {
         switch self {
@@ -19,8 +20,9 @@ enum ConversionError: LocalizedError {
         case .encoderUnavailable: "This Mac can't write this format."
         case .writeFailed: "The converted file could not be written."
         case .ffmpegFailed(let message): message.isEmpty ? "The conversion failed." : message
-        case .passwordProtected: "The archive is password-protected."
+        case .passwordProtected: "The file is password-protected."
         case .archiveFailed(let message): message.isEmpty ? "The conversion failed." : message
+        case .noText: "The PDF has no text to extract; scanned pages are images."
         }
     }
 }
@@ -30,9 +32,19 @@ typealias ProgressHandler = @Sendable (Double) -> Void
 
 protocol Converter: Sendable {
     var inputs: [UTType] { get }
+    // Subtypes of the inputs this converter leaves to another one.
+    var excludedInputs: [UTType] { get }
     var outputs: [OutputFormat] { get }
 
     func convert(_ source: URL, to format: OutputFormat, destination: URL, progress: @escaping ProgressHandler) async throws
+}
+
+extension Converter {
+    var excludedInputs: [UTType] { [] }
+
+    func accepts(_ type: UTType) -> Bool {
+        inputs.contains(where: type.conforms(to:)) && !excludedInputs.contains(where: type.conforms(to:))
+    }
 }
 
 struct ConverterRegistry: Sendable {
@@ -49,7 +61,7 @@ struct ConverterRegistry: Sendable {
     func converter(for file: URL, to format: OutputFormat) -> (any Converter)? {
         guard let type = Self.contentType(of: file), !type.conforms(to: format.type) else { return nil }
         return converters.first { converter in
-            converter.inputs.contains(where: type.conforms(to:)) && converter.outputs.contains(format)
+            converter.accepts(type) && converter.outputs.contains(format)
         }
     }
 
@@ -57,7 +69,7 @@ struct ConverterRegistry: Sendable {
         guard let type = Self.contentType(of: file) else { return [] }
 
         var formats: [OutputFormat] = []
-        for converter in converters where converter.inputs.contains(where: type.conforms(to:)) {
+        for converter in converters where converter.accepts(type) {
             for format in converter.outputs where !type.conforms(to: format.type) && !formats.contains(format) {
                 formats.append(format)
             }

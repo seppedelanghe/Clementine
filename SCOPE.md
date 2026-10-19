@@ -15,18 +15,19 @@ ffmpeg (see `docs/ffmpeg.md`) takes every other audio and video conversion.
 | Audio  | Any audio ffmpeg reads (OGG, Opus, WMA, …) | MP3, M4A, WAV, AIFF, FLAC, OGG, Opus, WMA | ffmpeg |
 | Archives | ZIP, 7z, RAR, TAR, TAR.GZ, TAR.BZ2, TAR.XZ | ZIP, 7z, TAR, TAR.GZ, TAR.XZ | System `bsdtar` |
 | Folders | Any folder                         | ZIP, 7z, TAR.GZ, TAR.XZ    | System `bsdtar` |
-| Documents | DOCX                             | PDF                        | Bundled `docxide-pdf` |
-| Documents | DOCX, DOC, RTF, ODT, HTML, TXT   | PDF, DOCX, RTF, ODT, HTML, TXT | NSAttributedString |
-| Documents | MD                               | PDF, DOCX, RTF, ODT, HTML, TXT | Foundation's Markdown parser |
-| Documents | PDF                              | TXT, RTF, DOCX (text only) | PDFKit       |
-| Documents | Pages                            | PDF, DOCX, RTF, TXT, EPUB  | Pages, only when installed |
+| Documents | DOCX                             | PDF, TXT                   | Bundled `docxide-pdf` |
+| Documents | RTF, HTML, TXT                   | PDF, DOCX, RTF, HTML, TXT  | NSAttributedString, own DOCX writer |
+| Documents | MD                               | PDF, DOCX, HTML, TXT       | Foundation's Markdown parser, own DOCX writer |
+| Documents | PDF                              | DOCX, TXT                  | PDFKit, own DOCX writer |
+| Documents | Pages                            | PDF, DOCX, TXT, EPUB       | Pages, only when installed |
 
-DOCX → PDF is laid out like Word prints it: pages, headers and footers, images, text boxes and
-shapes. Calibri and Cambria are drawn with their metric-compatible clones Carlito and Caladea.
-Every other document conversion keeps text, styles, lists and simple tables, but not page layout:
-headers and footers, columns and floating images are lost; a DOCX that `docxide-pdf` can't render
-falls back to this too. Pages files are exported by Pages itself, which asks once for Automation
-permission.
+Documents are only offered where the result is good. DOCX → PDF is laid out like Word prints it:
+pages, headers and footers, images, text boxes and shapes, with Calibri and Cambria drawn in their
+metric-compatible clones Carlito and Caladea. A DOCX that `docxide-pdf` can't render falls back to
+a text-only PDF. DOCX output is written by Clementine itself, so tables, images, lists and code
+blocks survive, which Cocoa's own DOCX writer drops. PDF → DOCX joins each page's lines back into
+paragraphs; scanned PDFs have no text to extract. Pages files are exported by Pages itself, which
+asks once for Automation permission.
 
 Known quirks of DOCX → PDF:
 
@@ -67,8 +68,9 @@ Each of these is a later, self-contained addition to the converter registry or t
 |------------------------------------------------|---------------------------------------------------|
 | WebP, AVIF, JXL output                         | libwebp, libavif, libjxl                          |
 | Subtitles (SRT, VTT, TXT)                      | Own parser                                        |
-| Office documents with their page layout        | Undecided; would need LibreOffice                 |
+| DOC and ODT input; DOCX to anything but PDF/TXT | No engine keeps their layout under ~140 MB; LibreOffice as an optional download |
 | Markdown output                                | Own writer from NSAttributedString                |
+| OCR for scanned PDFs                           | Vision                                            |
 | Password-protected archives                    | Password prompt                                   |
 | Move action                                    | Folder picker                                     |
 | Float (a floating shelf of files)              | Own window                                        |

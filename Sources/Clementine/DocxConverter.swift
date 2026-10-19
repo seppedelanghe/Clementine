@@ -2,13 +2,13 @@ import Foundation
 import OSLog
 import UniformTypeIdentifiers
 
-// Registered before TextDocumentConverter, which keeps every other DOCX output and is the fallback
-// here: a text-only PDF beats no PDF when docxide-pdf can't lay a document out.
+// PDF through docxide-pdf, which lays pages out like Word. Cocoa's importer only gets the text
+// right, so it provides TXT, and a text-only PDF when docxide-pdf can't lay a document out.
 struct DocxConverter: Converter {
     private static let logger = Logger(subsystem: "be.seppedelanghe.clementine", category: "docx")
 
     let inputs: [UTType] = [OutputFormat.docx.type]
-    let outputs: [OutputFormat] = [.pdf]
+    let outputs: [OutputFormat] = [.pdf, .txt]
 
     func convert(
         _ source: URL,
@@ -17,13 +17,19 @@ struct DocxConverter: Converter {
         progress: @escaping ProgressHandler
     ) async throws {
         assert(outputs.contains(format))
-        do {
-            try await Self.render(source, to: destination)
-        } catch {
-            Self.logger.error(
-                "docxide-pdf failed on \(source.path, privacy: .public): \(String(describing: error), privacy: .public)"
-            )
-            try await TextDocumentConverter().convert(source, to: format, destination: destination, progress: progress)
+        if format == .pdf {
+            do {
+                try await Self.render(source, to: destination)
+                return
+            } catch {
+                Self.logger.error(
+                    "docxide-pdf failed on \(source.path, privacy: .public): \(String(describing: error), privacy: .public)"
+                )
+            }
+        }
+        try await MainActor.run {
+            let (document, attributes) = try TextDocumentConverter.read(source)
+            try TextDocumentConverter.write(document, attributes: attributes, as: format, to: destination)
         }
     }
 

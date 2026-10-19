@@ -1,12 +1,13 @@
 import AppKit
 import UniformTypeIdentifiers
 
-// Cocoa's own document importers and exporters. They keep text, styles, lists and simple tables;
-// page layout such as headers, footers, columns and floating images is lost.
+// Cocoa's own document importers and exporters, for the formats they handle without losing
+// content: RTF is Cocoa's native format, and HTML and plain text carry little layout to lose.
 struct TextDocumentConverter: Converter {
-    // Plain text by conformance, so Markdown, CSV and source code are offered these outputs too.
-    let inputs: [UTType] = [OutputFormat.docx.type, .doc, .rtf, OutputFormat.odt.type, .html, .plainText]
-    let outputs: [OutputFormat] = [.pdf, .docx, .rtf, .odt, .html, .txt]
+    // Plain text by conformance, so CSV and source code are offered these outputs too.
+    let inputs: [UTType] = [.rtf, .html, .plainText]
+    let excludedInputs: [UTType] = [.markdown]
+    let outputs: [OutputFormat] = [.pdf, .docx, .rtf, .html, .txt]
 
     func convert(
         _ source: URL,
@@ -17,14 +18,19 @@ struct TextDocumentConverter: Converter {
         assert(outputs.contains(format))
         // The HTML importer and the text view that lays out PDF pages both need the main thread.
         try await MainActor.run {
-            var readAttributes: NSDictionary?
-            guard let document = try? NSAttributedString(url: source, options: [:], documentAttributes: &readAttributes) else {
-                throw ConversionError.unreadableSource
-            }
-            // Paper size, margins and metadata carry over to the output where it has room for them.
-            let attributes = readAttributes as? [NSAttributedString.DocumentAttributeKey: Any] ?? [:]
+            let (document, attributes) = try Self.read(source)
             try Self.write(document, attributes: attributes, as: format, to: destination)
         }
+    }
+
+    // Paper size, margins and metadata come along, so the output keeps them where it has room.
+    @MainActor
+    static func read(_ source: URL) throws -> (NSAttributedString, [NSAttributedString.DocumentAttributeKey: Any]) {
+        var attributes: NSDictionary?
+        guard let document = try? NSAttributedString(url: source, options: [:], documentAttributes: &attributes) else {
+            throw ConversionError.unreadableSource
+        }
+        return (document, attributes as? [NSAttributedString.DocumentAttributeKey: Any] ?? [:])
     }
 
     @MainActor
@@ -43,7 +49,6 @@ struct TextDocumentConverter: Converter {
             switch format {
             case .docx: NSAttributedString.DocumentType.officeOpenXML
             case .rtf: NSAttributedString.DocumentType.rtf
-            case .odt: NSAttributedString.DocumentType.openDocument
             case .html: NSAttributedString.DocumentType.html
             case .txt: NSAttributedString.DocumentType.plain
             default: preconditionFailure("No document type for \(format.title)")
@@ -141,8 +146,4 @@ struct TextDocumentConverter: Converter {
         operation.showsProgressPanel = false
         guard operation.run() else { throw ConversionError.writeFailed }
     }
-}
-
-private extension UTType {
-    static let doc = UTType("com.microsoft.word.doc")!
 }
