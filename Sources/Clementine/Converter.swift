@@ -8,6 +8,8 @@ enum ConversionError: LocalizedError {
     case encoderUnavailable
     case writeFailed
     case ffmpegFailed(String)
+    case passwordProtected
+    case archiveFailed(String)
 
     var errorDescription: String? {
         switch self {
@@ -17,6 +19,8 @@ enum ConversionError: LocalizedError {
         case .encoderUnavailable: "This Mac can't write this format."
         case .writeFailed: "The converted file could not be written."
         case .ffmpegFailed(let message): message.isEmpty ? "The conversion failed." : message
+        case .passwordProtected: "The archive is password-protected."
+        case .archiveFailed(let message): message.isEmpty ? "The conversion failed." : message
         }
     }
 }

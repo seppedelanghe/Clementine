@@ -62,4 +62,22 @@ extension OutputFormat {
         fileExtension: "wma",
         symbol: "waveform"
     )
+
+    static let zip = OutputFormat(title: "ZIP", type: .zip, fileExtension: "zip", symbol: "doc.zipper")
+    static let sevenZip = OutputFormat(
+        title: "7z",
+        type: UTType("org.7-zip.7-zip-archive")!,
+        fileExtension: "7z",
+        symbol: "doc.zipper"
+    )
+    static let tar = OutputFormat(title: "TAR", type: UTType("public.tar-archive")!, fileExtension: "tar", symbol: "doc.zipper")
+    // Typed as plain gzip and xz, which is what macOS gives ".tar.gz" and ".tar.xz" files, so
+    // those are never offered a conversion to themselves.
+    static let tarGz = OutputFormat(title: "TAR.GZ", type: .gzip, fileExtension: "tar.gz", symbol: "doc.zipper")
+    static let tarXz = OutputFormat(
+        title: "TAR.XZ",
+        type: UTType("org.tukaani.xz-archive")!,
+        fileExtension: "tar.xz",
+        symbol: "doc.zipper"
+    )
 }

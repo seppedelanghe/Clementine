@@ -51,7 +51,9 @@ struct ConversionRunner: Sendable {
     // Finder-style numbering: "photo.png", then "photo 2.png", "photo 3.png", …
     private static func availableDestination(for file: URL, as format: OutputFormat) -> URL {
         let directory = file.deletingLastPathComponent()
-        let base = file.deletingPathExtension().lastPathComponent
+        var base = file.deletingPathExtension().lastPathComponent
+        // "name.tar.gz" becomes "name.zip", not "name.tar.zip".
+        if base.hasSuffix(".tar") { base.removeLast(4) }
         var candidate = directory.appending(path: "\(base).\(format.fileExtension)")
         var number = 2
         while FileManager.default.fileExists(atPath: candidate.path) {
