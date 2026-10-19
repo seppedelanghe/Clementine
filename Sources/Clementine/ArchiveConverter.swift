@@ -6,9 +6,11 @@ import UniformTypeIdentifiers
 struct ArchiveConverter: Converter {
     // Listed one by one because .archive also covers disk images and installer packages.
     // ".tar.gz" and ".tar.bz2" are typed as plain gzip and bzip2 by macOS.
-    let inputs: [UTType] = [
+    static let readableTypes: [UTType] = [
         .zip, .gzip, .bz2, .tar, .xz, .tarXz, .sevenZip, .rar,
     ]
+
+    let inputs = readableTypes
     let outputs: [OutputFormat] = [.zip, .sevenZip, .tar, .tarGz, .tarXz]
 
     func convert(

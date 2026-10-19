@@ -154,7 +154,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case .actions:
             (
                 "Actions",
-                QuickAction.allCases.map { WheelItem(title: $0.title, symbol: $0.symbol, action: .quickAction($0)) }
+                QuickAction.allCases
+                    .filter { $0.isAvailable(for: trigger.files) }
+                    .map { WheelItem(title: $0.title, symbol: $0.symbol, action: .quickAction($0)) }
             )
         }
     }

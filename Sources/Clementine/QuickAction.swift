@@ -1,4 +1,5 @@
 import AppKit
+import UniformTypeIdentifiers
 
 enum QuickActionError: LocalizedError {
     case airDropUnavailable
@@ -19,12 +20,14 @@ enum QuickAction: CaseIterable {
     case copy
     case copyPath
     case airDrop
+    case extract
 
     var title: String {
         switch self {
         case .copy: "Copy"
         case .copyPath: "Copy Path"
         case .airDrop: "AirDrop"
+        case .extract: "Extract"
         }
     }
 
@@ -33,6 +36,18 @@ enum QuickAction: CaseIterable {
         case .copy: "doc.on.doc"
         case .copyPath: "doc.on.clipboard"
         case .airDrop: "dot.radiowaves.left.and.right"
+        case .extract: "archivebox"
+        }
+    }
+
+    func isAvailable(for files: [URL]) -> Bool {
+        switch self {
+        case .copy, .copyPath, .airDrop: true
+        case .extract:
+            files.allSatisfy { file in
+                guard let type = try? file.resourceValues(forKeys: [.contentTypeKey]).contentType else { return false }
+                return ArchiveConverter.readableTypes.contains(where: type.conforms(to:))
+            }
         }
     }
 
@@ -59,6 +74,50 @@ enum QuickAction: CaseIterable {
             // The picker opens behind the frontmost app unless this menu-bar app activates first.
             NSApp.activate()
             service.perform(withItems: files)
+
+        case .extract:
+            for archive in files {
+                try await Self.extract(archive)
+            }
+        }
+    }
+
+    // Like Archive Utility: a single top-level item lands beside the archive as it is, anything
+    // more goes into a folder named after the archive.
+    private static func extract(_ archive: URL) async throws {
+        let directory = archive.deletingLastPathComponent()
+        let workspace = try FileManager.default.url(
+            for: .itemReplacementDirectory,
+            in: .userDomainMask,
+            appropriateFor: directory,
+            create: true
+        )
+        defer { try? FileManager.default.removeItem(at: workspace) }
+        let contents = workspace.appending(path: "contents")
+        try FileManager.default.createDirectory(at: contents, withIntermediateDirectories: false)
+        // Zips made by Finder carry resource forks in __MACOSX; Archive Utility hides it too.
+        try await BSDTar.run(["-x", "-f", archive.path, "-C", contents.path, "--exclude", "__MACOSX"])
+
+        let items = try FileManager.default.contentsOfDirectory(at: contents, includingPropertiesForKeys: nil)
+        if items.count == 1 {
+            let item = items[0]
+            let name = item.lastPathComponent
+            let base = try item.resourceValues(forKeys: [.isDirectoryKey]).isDirectory == true
+                ? name
+                : FileManager.baseName(of: name)
+            let destination = FileManager.default.availableURL(
+                base: base,
+                suffix: String(name.dropFirst(base.count)),
+                in: directory
+            )
+            try FileManager.default.moveItem(at: item, to: destination)
+        } else {
+            let destination = FileManager.default.availableURL(
+                base: FileManager.baseName(of: archive.lastPathComponent),
+                suffix: "",
+                in: directory
+            )
+            try FileManager.default.moveItem(at: contents, to: destination)
         }
     }
 

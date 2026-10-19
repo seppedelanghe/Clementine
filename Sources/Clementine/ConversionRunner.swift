@@ -45,21 +45,31 @@ struct ConversionRunner: Sendable {
 
         let temporary = workspace.appending(path: "output.\(format.fileExtension)")
         try await converter.convert(file, to: format, destination: temporary, progress: progress)
-        try FileManager.default.moveItem(at: temporary, to: Self.availableDestination(for: file, as: format))
+        let destination = FileManager.default.availableURL(
+            base: FileManager.baseName(of: file.lastPathComponent),
+            suffix: ".\(format.fileExtension)",
+            in: directory
+        )
+        try FileManager.default.moveItem(at: temporary, to: destination)
     }
+}
 
+extension FileManager {
     // Finder-style numbering: "photo.png", then "photo 2.png", "photo 3.png", …
-    private static func availableDestination(for file: URL, as format: OutputFormat) -> URL {
-        let directory = file.deletingLastPathComponent()
-        var base = file.deletingPathExtension().lastPathComponent
-        // "name.tar.gz" becomes "name.zip", not "name.tar.zip".
-        if base.hasSuffix(".tar") { base.removeLast(4) }
-        var candidate = directory.appending(path: "\(base).\(format.fileExtension)")
+    func availableURL(base: String, suffix: String, in directory: URL) -> URL {
+        var candidate = directory.appending(path: base + suffix)
         var number = 2
-        while FileManager.default.fileExists(atPath: candidate.path) {
-            candidate = directory.appending(path: "\(base) \(number).\(format.fileExtension)")
+        while fileExists(atPath: candidate.path) {
+            candidate = directory.appending(path: "\(base) \(number)\(suffix)")
             number += 1
         }
         return candidate
+    }
+
+    // "name.tar.gz" has the base name "name", so it converts to "name.zip", not "name.tar.zip".
+    static func baseName(of name: String) -> String {
+        var base = (name as NSString).deletingPathExtension
+        if base.hasSuffix(".tar") { base.removeLast(4) }
+        return base
     }
 }
