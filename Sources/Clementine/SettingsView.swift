@@ -27,11 +27,22 @@ struct SettingsView: View {
                     }
                 }
             }
+            Section {
+                LabeledContent("Version", value: Self.version)
+                Link("Clementine on GitHub", destination: URL(string: "https://github.com/seppedelanghe/Clementine")!)
+            }
         }
         .formStyle(.grouped)
         .frame(width: 380)
         .fixedSize()
         .onAppear { loginItem.refresh() }
+    }
+
+    // "0.1.1 (2)": the build number is what Sparkle compares.
+    private static var version: String {
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as! String
+        let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as! String
+        return "\(version) (\(build))"
     }
 
     // Both wheels on one key would leave one unreachable, so picking the other wheel's key swaps them.
