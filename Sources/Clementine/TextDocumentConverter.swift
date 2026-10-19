@@ -22,30 +22,40 @@ struct TextDocumentConverter: Converter {
                 throw ConversionError.unreadableSource
             }
             // Paper size, margins and metadata carry over to the output where it has room for them.
-            var attributes = readAttributes as? [NSAttributedString.DocumentAttributeKey: Any] ?? [:]
-
-            if format == .pdf {
-                try Self.writePDF(document, attributes: attributes, to: destination)
-                return
-            }
-            attributes[.documentType] =
-                switch format {
-                case .docx: NSAttributedString.DocumentType.officeOpenXML
-                case .rtf: NSAttributedString.DocumentType.rtf
-                case .odt: NSAttributedString.DocumentType.openDocument
-                case .html: NSAttributedString.DocumentType.html
-                case .txt: NSAttributedString.DocumentType.plain
-                default: preconditionFailure("No document type for \(format.title)")
-                }
-            attributes[.characterEncoding] = String.Encoding.utf8.rawValue
-            guard
-                let data = try? document.data(
-                    from: NSRange(location: 0, length: document.length),
-                    documentAttributes: attributes
-                )
-            else { throw ConversionError.writeFailed }
-            try data.write(to: destination)
+            let attributes = readAttributes as? [NSAttributedString.DocumentAttributeKey: Any] ?? [:]
+            try Self.write(document, attributes: attributes, as: format, to: destination)
         }
+    }
+
+    @MainActor
+    static func write(
+        _ document: NSAttributedString,
+        attributes: [NSAttributedString.DocumentAttributeKey: Any],
+        as format: OutputFormat,
+        to destination: URL
+    ) throws {
+        if format == .pdf {
+            try writePDF(document, attributes: attributes, to: destination)
+            return
+        }
+        var attributes = attributes
+        attributes[.documentType] =
+            switch format {
+            case .docx: NSAttributedString.DocumentType.officeOpenXML
+            case .rtf: NSAttributedString.DocumentType.rtf
+            case .odt: NSAttributedString.DocumentType.openDocument
+            case .html: NSAttributedString.DocumentType.html
+            case .txt: NSAttributedString.DocumentType.plain
+            default: preconditionFailure("No document type for \(format.title)")
+            }
+        attributes[.characterEncoding] = String.Encoding.utf8.rawValue
+        guard
+            let data = try? document.data(
+                from: NSRange(location: 0, length: document.length),
+                documentAttributes: attributes
+            )
+        else { throw ConversionError.writeFailed }
+        try data.write(to: destination)
     }
 
     // A print job saved to a file splits pages on line boundaries; pdfOperation and dataWithPDF

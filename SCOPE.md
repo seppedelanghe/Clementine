@@ -17,7 +17,7 @@ ffmpeg (see `docs/ffmpeg.md`) takes every other audio and video conversion.
 | Folders | Any folder                         | ZIP, 7z, TAR.GZ, TAR.XZ    | System `bsdtar` |
 | Documents | DOCX                             | PDF                        | Bundled `docxide-pdf` |
 | Documents | DOCX, DOC, RTF, ODT, HTML, TXT   | PDF, DOCX, RTF, ODT, HTML, TXT | NSAttributedString |
-| Documents | MD                               | PDF, DOCX, RTF, HTML, TXT  | Foundation's Markdown parser |
+| Documents | MD                               | PDF, DOCX, RTF, ODT, HTML, TXT | Foundation's Markdown parser |
 | Documents | PDF                              | TXT, RTF, DOCX (text only) | PDFKit       |
 | Documents | Pages                            | PDF, DOCX, RTF, TXT, EPUB  | Pages, only when installed |
 
