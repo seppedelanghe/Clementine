@@ -1,4 +1,5 @@
 import AppKit
+import PDFKit
 import UniformTypeIdentifiers
 import Vision
 
@@ -26,6 +27,7 @@ enum QuickAction: CaseIterable {
     case compress
     case extract
     case removeBackground
+    case combineIntoPDF
 
     var title: String {
         switch self {
@@ -35,6 +37,7 @@ enum QuickAction: CaseIterable {
         case .compress: "Compress"
         case .extract: "Extract"
         case .removeBackground: "Remove Background"
+        case .combineIntoPDF: "Combine into PDF"
         }
     }
 
@@ -46,6 +49,7 @@ enum QuickAction: CaseIterable {
         case .compress: "doc.zipper"
         case .extract: "archivebox"
         case .removeBackground: "person.and.background.dotted"
+        case .combineIntoPDF: "rectangle.stack"
         }
     }
 
@@ -56,6 +60,7 @@ enum QuickAction: CaseIterable {
         case .compress: !files.allSatisfy(Self.isArchive)
         case .extract: files.allSatisfy(Self.isArchive)
         case .removeBackground: files.allSatisfy(Self.isImage)
+        case .combineIntoPDF: files.count > 1 && files.allSatisfy { Self.isImage($0) || Self.isPDF($0) }
         }
     }
 
@@ -67,6 +72,10 @@ enum QuickAction: CaseIterable {
     private static func isImage(_ file: URL) -> Bool {
         guard let type = try? file.resourceValues(forKeys: [.contentTypeKey]).contentType else { return false }
         return ImageConverter().inputs.contains(where: type.conforms(to:))
+    }
+
+    private static func isPDF(_ file: URL) -> Bool {
+        (try? file.resourceValues(forKeys: [.contentTypeKey]).contentType)?.conforms(to: .pdf) == true
     }
 
     @MainActor
@@ -105,6 +114,9 @@ enum QuickAction: CaseIterable {
             for image in files {
                 try await Self.removeBackground(image)
             }
+
+        case .combineIntoPDF:
+            try await Self.combineIntoPDF(files)
         }
     }
 
@@ -203,6 +215,44 @@ enum QuickAction: CaseIterable {
             suffix: ".png",
             in: directory
         )
+        try FileManager.default.moveItem(at: temporary, to: destination)
+    }
+
+    // Sorted by name the way Finder sorts, "2" before "10", so pages follow the files' numbering.
+    // "Combined.pdf" lands beside the first file.
+    private static func combineIntoPDF(_ files: [URL]) async throws {
+        let files = files.sorted {
+            $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending
+        }
+        let combined = PDFDocument()
+        for file in files {
+            if isPDF(file) {
+                guard let pdf = PDFDocument(url: file) else { throw ConversionError.unreadableSource }
+                guard !pdf.isLocked else { throw ConversionError.passwordProtected }
+                for index in 0..<pdf.pageCount {
+                    // A page belongs to one document, so a copy of it is what moves across.
+                    guard let page = pdf.page(at: index)?.copy() as? PDFPage else {
+                        throw ConversionError.unreadableSource
+                    }
+                    combined.insert(page, at: combined.pageCount)
+                }
+            } else {
+                let (image, _) = try ImageConverter.read(file)
+                combined.insert(try ImageConverter.pdfPage(image), at: combined.pageCount)
+            }
+        }
+
+        let directory = files[0].deletingLastPathComponent()
+        let workspace = try FileManager.default.url(
+            for: .itemReplacementDirectory,
+            in: .userDomainMask,
+            appropriateFor: directory,
+            create: true
+        )
+        defer { try? FileManager.default.removeItem(at: workspace) }
+        let temporary = workspace.appending(path: "output.pdf")
+        guard combined.write(to: temporary) else { throw ConversionError.writeFailed }
+        let destination = FileManager.default.availableURL(base: "Combined", suffix: ".pdf", in: directory)
         try FileManager.default.moveItem(at: temporary, to: destination)
     }
 

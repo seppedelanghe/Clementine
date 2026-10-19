@@ -83,13 +83,17 @@ struct ImageConverter: Converter {
         guard CGImageDestinationFinalize(imageDestination) else { throw ConversionError.writeFailed }
     }
 
-    private func writePDF(_ image: CGImage, to destination: URL) throws {
+    static func pdfPage(_ image: CGImage) throws -> PDFPage {
         let nsImage = NSImage(cgImage: image, size: NSSize(width: image.width, height: image.height))
-        guard let page = PDFPage(image: nsImage, options: [.compressionQuality: Self.lossyQuality]) else {
+        guard let page = PDFPage(image: nsImage, options: [.compressionQuality: lossyQuality]) else {
             throw ConversionError.writeFailed
         }
+        return page
+    }
+
+    private func writePDF(_ image: CGImage, to destination: URL) throws {
         let document = PDFDocument()
-        document.insert(page, at: 0)
+        document.insert(try Self.pdfPage(image), at: 0)
         guard document.write(to: destination) else { throw ConversionError.writeFailed }
     }
 }
