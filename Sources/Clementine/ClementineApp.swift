@@ -56,7 +56,7 @@ struct ClementineApp: App {
         let file = job.files[job.fileIndex].lastPathComponent
         let count = job.files.count > 1 ? " (\(job.fileIndex + 1) of \(job.files.count))" : ""
         let percent = job.fraction.formatted(.percent.precision(.fractionLength(0)))
-        return "\(file) → \(job.format.title)\(count) · \(percent)"
+        return "\(file) → \(job.target)\(count) · \(percent)"
     }
 }
 
@@ -93,7 +93,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             switch item.action {
             case .convert(let format):
                 Task {
-                    let job = activity.begin(files, to: format)
+                    let job = activity.begin(files, to: format.title)
                     let failures = await runner.run(files, to: format) { fileIndex, fraction in
                         Task { @MainActor in activity.update(job, fileIndex: fileIndex, fileFraction: fraction) }
                     }
@@ -112,8 +112,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 }
             case .quickAction(let action):
                 Self.perform(action.title, logger: logger) { try await action.perform(on: files) }
-            case .shrink(let scale):
-                Self.perform(Shrink.title, logger: logger) { try await Shrink.images(files, to: scale) }
+            case .shrink(let option):
+                Self.perform(Shrink.title, logger: logger) {
+                    let job = activity.begin(files, to: option.title)
+                    defer { activity.end(job) }
+                    try await Shrink.run(files, to: option) { fileIndex, fraction in
+                        Task { @MainActor in activity.update(job, fileIndex: fileIndex, fileFraction: fraction) }
+                    }
+                }
             case .open:
                 preconditionFailure("The wheel opens a sub-wheel rather than dropping on it")
             }

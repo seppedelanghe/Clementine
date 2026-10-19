@@ -3,7 +3,7 @@ import SwiftUI
 enum WheelAction: Hashable {
     case convert(OutputFormat)
     case quickAction(QuickAction)
-    case shrink(Double)
+    case shrink(Shrink.Option)
     // Resting on the item swaps the wheel to these; dropping on it does nothing.
     case open([WheelItem])
 }

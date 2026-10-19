@@ -10,7 +10,8 @@ final class ConversionActivity {
     struct Job: Identifiable {
         let id = UUID()
         let files: [URL]
-        let format: OutputFormat
+        // What the files become, e.g. "MP4" or "720p".
+        let target: String
         var fileIndex = 0
         var fileFraction = 0.0
         var isRevealed = false
@@ -29,9 +30,9 @@ final class ConversionActivity {
         return visible.map(\.fraction).reduce(0, +) / Double(visible.count)
     }
 
-    func begin(_ files: [URL], to format: OutputFormat) -> Job.ID {
+    func begin(_ files: [URL], to target: String) -> Job.ID {
         assert(!files.isEmpty)
-        let job = Job(files: files, format: format)
+        let job = Job(files: files, target: target)
         jobs.append(job)
         Task { [weak self] in
             try? await Task.sleep(for: Self.revealDelay)

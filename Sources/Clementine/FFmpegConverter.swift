@@ -42,6 +42,27 @@ enum FFmpeg {
         try await run(["-i", source.path] + arguments(for: format) + [destination.path], progress: progress)
     }
 
+    // HEVC for sending, at a lower quality than Convert's H.264: a 1080p screen recording comes
+    // out at about a tenth of its size. The shorter side becomes `height`, and is never enlarged.
+    static func shrink(
+        _ source: URL,
+        toHeight height: Int,
+        destination: URL,
+        progress: @escaping ProgressHandler
+    ) async throws {
+        let side = { (dimension: String) in "trunc(min(\(height),\(dimension))/2)*2" }
+        let scale = "scale=w='if(gte(iw,ih),-2,\(side("iw")))':h='if(gte(iw,ih),\(side("ih")),-2)'"
+        try await run(
+            [
+                "-i", source.path, "-sn", "-dn", "-vf", scale,
+                // Apple's players only accept HEVC in MP4 under the hvc1 tag.
+                "-c:v", "hevc_videotoolbox", "-q:v", "50", "-tag:v", "hvc1", "-pix_fmt", "yuv420p",
+                "-c:a", "aac_at", "-b:a", "128k", "-movflags", "+faststart", "-f", "mp4", destination.path,
+            ],
+            progress: progress
+        )
+    }
+
     // Fixed defaults per output; docs/ffmpeg.md has the reasoning. The muxer is always explicit
     // because the extension alone doesn't select it (M4A needs ipod, WMA needs asf).
     private static func arguments(for format: OutputFormat) -> [String] {
