@@ -17,6 +17,17 @@ struct ImageConverter: Converter {
         progress: @escaping ProgressHandler
     ) async throws {
         assert(outputs.contains(format))
+        let (image, metadata) = try Self.read(source)
+        if format == .pdf {
+            try writePDF(image, to: destination)
+        } else {
+            try Self.write(image, metadata: metadata, as: format.type, to: destination)
+        }
+    }
+
+    // `scale` applies to the width and height.
+    static func read(_ source: URL, scale: Double = 1) throws -> (CGImage, metadata: [CFString: Any]) {
+        assert(scale > 0 && scale <= 1)
         guard
             let imageSource = CGImageSourceCreateWithURL(source as CFURL, nil),
             let metadata = CGImageSourceCopyPropertiesAtIndex(imageSource, 0, nil) as? [CFString: Any],
@@ -29,33 +40,18 @@ struct ImageConverter: Converter {
         let options: [CFString: Any] = [
             kCGImageSourceCreateThumbnailFromImageAlways: true,
             kCGImageSourceCreateThumbnailWithTransform: true,
-            kCGImageSourceThumbnailMaxPixelSize: max(width, height),
+            kCGImageSourceThumbnailMaxPixelSize: max(1, (Double(max(width, height)) * scale).rounded()),
         ]
         guard let image = CGImageSourceCreateThumbnailAtIndex(imageSource, 0, options as CFDictionary) else {
             throw ConversionError.unreadableSource
         }
-
-        if format == .pdf {
-            try writePDF(image, to: destination)
-        } else {
-            try writeImage(image, metadata: metadata, as: format, to: destination)
-        }
+        return (image, metadata)
     }
 
-    private func writeImage(
-        _ image: CGImage,
-        metadata: [CFString: Any],
-        as format: OutputFormat,
-        to destination: URL
-    ) throws {
+    static func write(_ image: CGImage, metadata: [CFString: Any], as type: UTType, to destination: URL) throws {
         // Nil when the system has no encoder for the type, e.g. HEIC on older hardware.
         guard
-            let imageDestination = CGImageDestinationCreateWithURL(
-                destination as CFURL,
-                format.type.identifier as CFString,
-                1,
-                nil
-            )
+            let imageDestination = CGImageDestinationCreateWithURL(destination as CFURL, type.identifier as CFString, 1, nil)
         else { throw ConversionError.encoderUnavailable }
 
         var properties = metadata
@@ -63,6 +59,11 @@ struct ImageConverter: Converter {
         if var tiff = properties[kCGImagePropertyTIFFDictionary] as? [CFString: Any] {
             tiff[kCGImagePropertyTIFFOrientation] = 1
             properties[kCGImagePropertyTIFFDictionary] = tiff
+        }
+        if var exif = properties[kCGImagePropertyExifDictionary] as? [CFString: Any] {
+            exif[kCGImagePropertyExifPixelXDimension] = image.width
+            exif[kCGImagePropertyExifPixelYDimension] = image.height
+            properties[kCGImagePropertyExifDictionary] = exif
         }
         properties[kCGImageDestinationLossyCompressionQuality] = Self.lossyQuality
         // JPEG has no alpha channel; without a background, transparent areas turn black.

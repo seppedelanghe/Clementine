@@ -17,9 +17,7 @@ final class WheelController {
     func show(title: String, items: [WheelItem], files: [URL], at location: NSPoint) {
         assert(!items.isEmpty)
         pendingClose?.cancel()
-        model.title = title
-        model.items = items
-        model.highlighted = nil
+        model.show(title: title, items: items)
         self.files = files
 
         guard panel == nil else { return }
@@ -74,6 +72,13 @@ private final class WheelDropView: NSView {
     private let model: WheelModel
     private let onDrop: (Int) -> Void
     private let onEnd: () -> Void
+    private var dwellTarget: DwellTarget?
+    private var dwell: Task<Void, Never>?
+
+    private enum DwellTarget: Equatable {
+        case item(Int)
+        case centre
+    }
 
     init(model: WheelModel, onDrop: @escaping (Int) -> Void, onEnd: @escaping () -> Void) {
         self.model = model
@@ -106,10 +111,11 @@ private final class WheelDropView: NSView {
 
     override func draggingExited(_ sender: NSDraggingInfo?) {
         model.highlighted = nil
+        rest(on: nil)
     }
 
     override func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
-        guard let index = model.index(at: convert(sender.draggingLocation, from: nil)) else { return false }
+        guard let index = model.index(at: convert(sender.draggingLocation, from: nil)), accepts(index) else { return false }
         onDrop(index)
         return true
     }
@@ -119,7 +125,39 @@ private final class WheelDropView: NSView {
     }
 
     private func track(_ sender: NSDraggingInfo) -> NSDragOperation {
-        model.highlighted = model.index(at: convert(sender.draggingLocation, from: nil))
-        return model.highlighted == nil ? [] : .copy
+        let point = convert(sender.draggingLocation, from: nil)
+        let index = model.index(at: point)
+        model.highlighted = index
+        rest(on: index.map(DwellTarget.item) ?? (WheelModel.isInCentre(point) ? .centre : nil))
+        guard let index, accepts(index) else { return [] }
+        return .copy
+    }
+
+    private func accepts(_ index: Int) -> Bool {
+        if case .open = model.items[index].action { false } else { true }
+    }
+
+    // Like Finder's spring-loaded folders, since nothing can be clicked mid-drag: resting on an
+    // item with a sub-wheel opens it, and resting on the centre goes back.
+    private func rest(on target: DwellTarget?) {
+        guard target != dwellTarget else { return }
+        dwellTarget = target
+        dwell?.cancel()
+        let opens =
+            switch target {
+            case .item(let index): !accepts(index)
+            case .centre: model.canGoBack
+            case nil: false
+            }
+        guard opens, let target else { return }
+        dwell = Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(500))
+            guard !Task.isCancelled, let self else { return }
+            switch target {
+            case .item(let index): model.open(index)
+            case .centre: model.back()
+            }
+            dwellTarget = nil
+        }
     }
 }

@@ -3,6 +3,9 @@ import SwiftUI
 enum WheelAction: Hashable {
     case convert(OutputFormat)
     case quickAction(QuickAction)
+    case shrink(Double)
+    // Resting on the item swaps the wheel to these; dropping on it does nothing.
+    case open([WheelItem])
 }
 
 struct WheelItem: Hashable {
@@ -23,10 +26,36 @@ final class WheelModel {
     nonisolated static let canvas = diameter + 2 * margin
     nonisolated static let nudge: CGFloat = 6
 
-    var title = ""
-    var items: [WheelItem] = []
+    private(set) var title = ""
+    private(set) var items: [WheelItem] = []
     var highlighted: Int?
     var isOpen = false
+    // The levels a sub-wheel was opened from, innermost last.
+    private var parents: [(title: String, items: [WheelItem])] = []
+
+    var canGoBack: Bool { !parents.isEmpty }
+
+    func show(title: String, items: [WheelItem]) {
+        self.title = title
+        self.items = items
+        highlighted = nil
+        parents = []
+    }
+
+    func open(_ index: Int) {
+        guard case .open(let children) = items[index].action else { preconditionFailure("\(items[index].title) has no sub-wheel") }
+        parents.append((title, items))
+        title = items[index].title
+        items = children
+        highlighted = nil
+    }
+
+    func back() {
+        let parent = parents.removeLast()
+        title = parent.title
+        items = parent.items
+        highlighted = nil
+    }
 
     // Angles are measured clockwise from 12 o'clock; wedge 0 is centred on it.
     nonisolated static func wedgeWidth(count: Int) -> Double {
@@ -37,8 +66,12 @@ final class WheelModel {
         CGPoint(x: center.x + radius * sin(angle), y: center.y - radius * cos(angle))
     }
 
-    // `point` is in top-left-origin coordinates of the canvas. The gaps between segments count
-    // towards their neighbours, so a drop never falls through.
+    // `point` is in top-left-origin coordinates of the canvas.
+    nonisolated static func isInCentre(_ point: CGPoint) -> Bool {
+        hypot(point.x - canvas / 2, point.y - canvas / 2) < innerRadius
+    }
+
+    // The gaps between segments count towards their neighbours, so a drop never falls through.
     func index(at point: CGPoint) -> Int? {
         guard !items.isEmpty else { return nil }
         let dx = point.x - Self.canvas / 2
@@ -88,6 +121,12 @@ struct WheelView: View {
                     .position(WheelModel.point(angle: angle, radius: labelRadius, center: center))
                 }
                 .offset(x: nudge * sin(angle), y: -nudge * cos(angle))
+            }
+            if model.canGoBack {
+                Image(systemName: "chevron.backward")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                    .position(center)
             }
             // Above the ring rather than in its centre, where the dragged file's preview covers it.
             Text(model.highlighted.map { model.items[$0].title } ?? model.title)

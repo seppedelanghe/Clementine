@@ -111,18 +111,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     }
                 }
             case .quickAction(let action):
-                Task {
-                    do {
-                        try await action.perform(on: files)
-                    } catch {
-                        logger.error("\(action.title, privacy: .public) failed: \(String(describing: error), privacy: .public)")
-                        do {
-                            try await FailureNotification.post(error, for: action)
-                        } catch {
-                            logger.error("Failure notification not posted: \(String(describing: error), privacy: .public)")
-                        }
-                    }
-                }
+                Self.perform(action.title, logger: logger) { try await action.perform(on: files) }
+            case .shrink(let scale):
+                Self.perform(Shrink.title, logger: logger) { try await Shrink.images(files, to: scale) }
+            case .open:
+                preconditionFailure("The wheel opens a sub-wheel rather than dropping on it")
             }
         }
         let monitor = DragMonitor(
@@ -138,6 +131,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         monitor.start()
         dragMonitor = monitor
         wheelController = wheel
+    }
+
+    private static func perform(_ action: String, logger: Logger, _ work: @escaping @MainActor () async throws -> Void) {
+        Task {
+            do {
+                try await work()
+            } catch {
+                logger.error("\(action, privacy: .public) failed: \(String(describing: error), privacy: .public)")
+                do {
+                    try await FailureNotification.post(error, action: action)
+                } catch {
+                    logger.error("Failure notification not posted: \(String(describing: error), privacy: .public)")
+                }
+            }
+        }
     }
 
     private static func wheelContent(
@@ -158,6 +166,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 QuickAction.allCases
                     .filter { $0.isAvailable(for: trigger.files) }
                     .map { WheelItem(title: $0.title, symbol: $0.symbol, action: .quickAction($0)) }
+                    + [Shrink.item(for: trigger.files)].compactMap { $0 }
             )
         }
     }

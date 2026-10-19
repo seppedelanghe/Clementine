@@ -19,8 +19,8 @@ enum FailureNotification {
         }
     }
 
-    static func post(_ error: any Error, for action: QuickAction) async throws {
-        try await deliver(title: "\(action.title) failed", body: error.localizedDescription)
+    static func post(_ error: any Error, action: String) async throws {
+        try await deliver(title: "\(action) failed", body: error.localizedDescription)
     }
 
     private static func deliver(title: String, body: String) async throws {
