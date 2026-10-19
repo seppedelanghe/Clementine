@@ -15,14 +15,27 @@ ffmpeg (see `docs/ffmpeg.md`) takes every other audio and video conversion.
 | Audio  | Any audio ffmpeg reads (OGG, Opus, WMA, …) | MP3, M4A, WAV, AIFF, FLAC, OGG, Opus, WMA | ffmpeg |
 | Archives | ZIP, 7z, RAR, TAR, TAR.GZ, TAR.BZ2, TAR.XZ | ZIP, 7z, TAR, TAR.GZ, TAR.XZ | System `bsdtar` |
 | Folders | Any folder                         | ZIP, 7z, TAR.GZ, TAR.XZ    | System `bsdtar` |
+| Documents | DOCX                             | PDF                        | Bundled `docxide-pdf` |
 | Documents | DOCX, DOC, RTF, ODT, HTML, TXT   | PDF, DOCX, RTF, ODT, HTML, TXT | NSAttributedString |
 | Documents | MD                               | PDF, DOCX, RTF, HTML, TXT  | Foundation's Markdown parser |
 | Documents | PDF                              | TXT, RTF, DOCX (text only) | PDFKit       |
 | Documents | Pages                            | PDF, DOCX, RTF, TXT, EPUB  | Pages, only when installed |
 
-Documents keep text, styles, lists and simple tables. Page layout does not survive: headers and
-footers, columns and floating images are lost. Pages files are exported by Pages itself, which
-asks once for Automation permission.
+DOCX → PDF is laid out like Word prints it: pages, headers and footers, images, text boxes and
+shapes. Calibri and Cambria are drawn with their metric-compatible clones Carlito and Caladea.
+Every other document conversion keeps text, styles, lists and simple tables, but not page layout:
+headers and footers, columns and floating images are lost; a DOCX that `docxide-pdf` can't render
+falls back to this too. Pages files are exported by Pages itself, which asks once for Automation
+permission.
+
+Known quirks of DOCX → PDF:
+
+- Cover pages built from page-anchored shapes and hidden content can come out split over extra
+  pages: a test document Word prints on 8 pages came out on 10, with the cover title on the
+  page after the cover image and a blank page after it.
+- Arrows and connectors in shape diagrams can land slightly off their boxes.
+- Aptos, Word's newer default font, has no free metric-compatible clone, so line breaks in Aptos
+  documents can differ from Word's.
 
 ## Quick actions wheel (Control)
 
