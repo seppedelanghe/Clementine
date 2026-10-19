@@ -45,13 +45,16 @@ enum QuickAction: CaseIterable {
 
     func isAvailable(for files: [URL]) -> Bool {
         switch self {
-        case .copy, .copyPath, .airDrop, .compress: true
-        case .extract:
-            files.allSatisfy { file in
-                guard let type = try? file.resourceValues(forKeys: [.contentTypeKey]).contentType else { return false }
-                return ArchiveConverter.readableTypes.contains(where: type.conforms(to:))
-            }
+        case .copy, .copyPath, .airDrop: true
+        // Archives are already compressed; a mix with other files can still be.
+        case .compress: !files.allSatisfy(Self.isArchive)
+        case .extract: files.allSatisfy(Self.isArchive)
         }
+    }
+
+    private static func isArchive(_ file: URL) -> Bool {
+        guard let type = try? file.resourceValues(forKeys: [.contentTypeKey]).contentType else { return false }
+        return ArchiveConverter.readableTypes.contains(where: type.conforms(to:))
     }
 
     @MainActor
