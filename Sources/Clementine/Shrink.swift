@@ -22,12 +22,10 @@ enum Shrink {
     // Offered whatever the video's own size, since reading it would hold up the wheel; a video
     // is never enlarged.
     private static let videoOptions = [1080, 720, 480].map(Option.height)
-    // The formats ImageIO can also write; GIFs would lose their animation.
-    private static let imageTypes: [UTType] = [.jpeg, .png, .heic, .tiff, .bmp]
 
     static func item(for files: [URL]) -> WheelItem? {
         let options: [Option]
-        if files.allSatisfy({ imageType(of: $0) != nil }) {
+        if files.allSatisfy({ ImageConverter.editableType(of: $0) != nil }) {
             options = imageOptions
         } else if files.allSatisfy({ contentType(of: $0)?.conforms(to: .movie) == true }) {
             options = videoOptions
@@ -60,7 +58,7 @@ enum Shrink {
             let fileExtension: String
             switch option {
             case .scale(let scale):
-                guard let type = imageType(of: file) else { throw ConversionError.unsupportedSource }
+                guard let type = ImageConverter.editableType(of: file) else { throw ConversionError.unsupportedSource }
                 let (image, metadata) = try ImageConverter.read(file, scale: scale)
                 try ImageConverter.write(image, metadata: metadata, as: type, to: temporary)
                 fileExtension = file.pathExtension
@@ -75,11 +73,6 @@ enum Shrink {
             )
             try FileManager.default.moveItem(at: temporary, to: destination)
         }
-    }
-
-    private static func imageType(of file: URL) -> UTType? {
-        guard let type = contentType(of: file) else { return nil }
-        return imageTypes.first(where: type.conforms(to:))
     }
 
     private static func contentType(of file: URL) -> UTType? {

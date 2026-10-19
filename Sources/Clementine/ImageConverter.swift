@@ -8,6 +8,14 @@ struct ImageConverter: Converter {
 
     let inputs: [UTType] = [.jpeg, .png, .heic, .tiff, .gif, .bmp, .webP]
     let outputs: [OutputFormat] = [.jpeg, .png, .heic, .tiff, .pdf]
+    // The formats ImageIO can also write, so an edited image keeps its format; GIFs would lose
+    // their animation.
+    private static let editableTypes: [UTType] = [.jpeg, .png, .heic, .tiff, .bmp]
+
+    static func editableType(of file: URL) -> UTType? {
+        guard let type = try? file.resourceValues(forKeys: [.contentTypeKey]).contentType else { return nil }
+        return editableTypes.first(where: type.conforms(to:))
+    }
 
     // Only the first frame is converted, so an animated GIF becomes a still image.
     func convert(

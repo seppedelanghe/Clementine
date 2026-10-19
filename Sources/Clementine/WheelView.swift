@@ -4,6 +4,7 @@ enum WheelAction: Hashable {
     case convert(OutputFormat)
     case quickAction(QuickAction)
     case shrink(Shrink.Option)
+    case rotate(Rotate.Option)
     // Resting on the item swaps the wheel to these; dropping on it does nothing.
     case open([WheelItem])
 }

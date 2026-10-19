@@ -120,6 +120,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                         Task { @MainActor in activity.update(job, fileIndex: fileIndex, fileFraction: fraction) }
                     }
                 }
+            case .rotate(let option):
+                Self.perform(Rotate.title, logger: logger) {
+                    let job = activity.begin(files, to: option.title)
+                    defer { activity.end(job) }
+                    try await Rotate.run(files, to: option) { fileIndex in
+                        Task { @MainActor in activity.update(job, fileIndex: fileIndex, fileFraction: 0) }
+                    }
+                }
             case .open:
                 preconditionFailure("The wheel opens a sub-wheel rather than dropping on it")
             }
@@ -172,7 +180,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 QuickAction.allCases
                     .filter { $0.isAvailable(for: trigger.files) }
                     .map { WheelItem(title: $0.title, symbol: $0.symbol, action: .quickAction($0)) }
-                    + [Shrink.item(for: trigger.files)].compactMap { $0 }
+                    + [Shrink.item(for: trigger.files), Rotate.item(for: trigger.files)].compactMap { $0 }
             )
         }
     }
