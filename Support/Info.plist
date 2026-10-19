@@ -24,6 +24,8 @@
 	<string>14.0</string>
 	<key>LSUIElement</key>
 	<true/>
+	<key>NSAppleEventsUsageDescription</key>
+	<string>Clementine asks Pages to export the Pages documents you convert.</string>
 	<key>SUFeedURL</key>
 	<string>https://github.com/seppedelanghe/Clementine/releases/latest/download/appcast.xml</string>
 	<key>SUPublicEDKey</key>

@@ -19,7 +19,7 @@ ffmpeg (see `docs/ffmpeg.md`) takes every other audio and video conversion.
 | Documents | RTF, HTML, TXT                   | PDF, DOCX, RTF, HTML, TXT  | NSAttributedString, own DOCX writer |
 | Documents | MD                               | PDF, DOCX, HTML, TXT       | Foundation's Markdown parser, own DOCX writer |
 | Documents | PDF                              | DOCX, TXT                  | PDFKit, own DOCX writer |
-| Documents | Pages                            | PDF, DOCX, TXT, EPUB       | Pages, only when installed |
+| Documents | Pages                            | PDF, DOCX, RTF, TXT, EPUB  | Pages, only when installed |
 
 Documents are only offered where the result is good. DOCX → PDF is laid out like Word prints it:
 pages, headers and footers, images, text boxes and shapes, with Calibri and Cambria drawn in their

@@ -90,4 +90,5 @@ extension OutputFormat {
     static let rtf = OutputFormat(title: "RTF", type: .rtf, fileExtension: "rtf", symbol: "doc.richtext")
     static let html = OutputFormat(title: "HTML", type: .html, fileExtension: "html", symbol: "chevron.left.forwardslash.chevron.right")
     static let txt = OutputFormat(title: "TXT", type: .plainText, fileExtension: "txt", symbol: "doc.plaintext")
+    static let epub = OutputFormat(title: "EPUB", type: UTType("org.idpf.epub-container")!, fileExtension: "epub", symbol: "book")
 }

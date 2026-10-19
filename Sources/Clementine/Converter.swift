@@ -11,6 +11,8 @@ enum ConversionError: LocalizedError {
     case passwordProtected
     case archiveFailed(String)
     case noText
+    case automationDenied
+    case pagesFailed(String)
 
     var errorDescription: String? {
         switch self {
@@ -23,6 +25,9 @@ enum ConversionError: LocalizedError {
         case .passwordProtected: "The file is password-protected."
         case .archiveFailed(let message): message.isEmpty ? "The conversion failed." : message
         case .noText: "The PDF has no text to extract; scanned pages are images."
+        case .automationDenied:
+            "Clementine isn't allowed to control Pages. Allow it in System Settings under Privacy & Security, Automation."
+        case .pagesFailed(let message): message.isEmpty ? "Pages couldn't export the document." : message
         }
     }
 }

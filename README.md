@@ -28,6 +28,11 @@ show their progress in the menu bar.
 | Audio: MP3, M4A, WAV, AIFF, FLAC, OGG, Opus, WMA, … | MP3, M4A, WAV, AIFF, FLAC, OGG, Opus, WMA |
 | Archives: ZIP, 7z, RAR, TAR, TAR.GZ, TAR.BZ2, TAR.XZ | ZIP, 7z, TAR, TAR.GZ, TAR.XZ |
 | Folders | ZIP, 7z, TAR.GZ, TAR.XZ |
+| Word: DOCX | PDF (laid out like Word), TXT |
+| Text: RTF, HTML, TXT | PDF, DOCX, RTF, HTML, TXT |
+| Markdown | PDF, DOCX, HTML, TXT |
+| PDF | DOCX, TXT (text only) |
+| Pages (when Pages is installed) | PDF, DOCX, RTF, TXT, EPUB |
 
 Actions: **Copy**, **Copy Path**, **AirDrop**, **Compress** and **Extract**.
 
