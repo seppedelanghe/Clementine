@@ -68,29 +68,10 @@ enum BSDTar {
     }
 
     static func run(_ arguments: [String]) async throws {
-        let process = Process()
-        process.executableURL = URL(filePath: "/usr/bin/tar")
-        process.arguments = arguments
-        process.standardInput = FileHandle.nullDevice
-        process.standardOutput = FileHandle.nullDevice
-        let errors = Pipe()
-        process.standardError = errors
-
-        let exits = AsyncStream<Int32> { continuation in
-            process.terminationHandler = { process in
-                continuation.yield(process.terminationStatus)
-                continuation.finish()
-            }
-        }
-        try process.run()
-
-        // Drained while bsdtar runs: on an encrypted archive it prompts thousands of times.
-        var errorLines: [String] = []
-        for try await line in errors.fileHandleForReading.bytes.lines where errorLines.count < 50 {
-            errorLines.append(line)
-        }
-        for await status in exits where status != 0 {
-            throw error(from: errorLines)
+        do {
+            try await Subprocess.run(URL(filePath: "/usr/bin/tar"), arguments: arguments)
+        } catch let failure as Subprocess.Failure {
+            throw error(from: failure.errorLines)
         }
     }
 
