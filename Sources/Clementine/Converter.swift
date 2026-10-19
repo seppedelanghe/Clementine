@@ -64,7 +64,7 @@ struct ConverterRegistry: Sendable {
 
     // Nil when the file changed or vanished after the wheel offered the format.
     func converter(for file: URL, to format: OutputFormat) -> (any Converter)? {
-        guard let type = Self.contentType(of: file), !type.conforms(to: format.type) else { return nil }
+        guard let type = Self.contentType(of: file), !Self.isOwnFormat(format, of: file, type: type) else { return nil }
         return converters.first { converter in
             converter.accepts(type) && converter.outputs.contains(format)
         }
@@ -75,11 +75,16 @@ struct ConverterRegistry: Sendable {
 
         var formats: [OutputFormat] = []
         for converter in converters where converter.accepts(type) {
-            for format in converter.outputs where !type.conforms(to: format.type) && !formats.contains(format) {
+            for format in converter.outputs where !Self.isOwnFormat(format, of: file, type: type) && !formats.contains(format) {
                 formats.append(format)
             }
         }
         return formats
+    }
+
+    // The extension catches what the type misses: macOS types .opus files as Ogg audio.
+    private static func isOwnFormat(_ format: OutputFormat, of file: URL, type: UTType) -> Bool {
+        type.conforms(to: format.type) || file.lastPathComponent.lowercased().hasSuffix(".\(format.fileExtension)")
     }
 
     // A file whose metadata can't be read can't be converted either; it simply offers nothing.
