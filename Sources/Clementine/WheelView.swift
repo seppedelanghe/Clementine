@@ -112,10 +112,14 @@ struct WheelView: View {
                     VStack(spacing: 3) {
                         if let symbol = item.symbol {
                             Image(systemName: symbol)
-                                .font(.system(size: 16))
+                                .font(.system(size: 14))
                         }
+                        // Narrow enough that two lines still fit inside a wedge of a six-item
+                        // wheel; "Background" alone is 65 pt.
                         Text(item.title)
-                            .font(.system(size: 13, weight: .semibold))
+                            .font(.system(size: 11, weight: .semibold))
+                            .multilineTextAlignment(.center)
+                            .frame(maxWidth: 66)
                     }
                     .foregroundStyle(isHighlighted ? Color.white : Color.primary)
                     .position(WheelModel.point(angle: angle, radius: labelRadius, center: center))

@@ -1,10 +1,12 @@
 import AppKit
 import UniformTypeIdentifiers
+import Vision
 
 enum QuickActionError: LocalizedError {
     case airDropUnavailable
     case copyFailed
     case folderAccessDenied(String)
+    case noSubject(String)
 
     var errorDescription: String? {
         switch self {
@@ -12,6 +14,7 @@ enum QuickActionError: LocalizedError {
         case .copyFailed: "The files could not be copied."
         case .folderAccessDenied(let folder):
             "Clementine can't access \(folder). Allow it in System Settings under Privacy & Security, Files & Folders."
+        case .noSubject(let file): "No subject was found in \(file)."
         }
     }
 }
@@ -22,6 +25,7 @@ enum QuickAction: CaseIterable {
     case airDrop
     case compress
     case extract
+    case removeBackground
 
     var title: String {
         switch self {
@@ -30,6 +34,7 @@ enum QuickAction: CaseIterable {
         case .airDrop: "AirDrop"
         case .compress: "Compress"
         case .extract: "Extract"
+        case .removeBackground: "Remove Background"
         }
     }
 
@@ -40,6 +45,7 @@ enum QuickAction: CaseIterable {
         case .airDrop: "dot.radiowaves.left.and.right"
         case .compress: "doc.zipper"
         case .extract: "archivebox"
+        case .removeBackground: "person.and.background.dotted"
         }
     }
 
@@ -49,12 +55,18 @@ enum QuickAction: CaseIterable {
         // Archives are already compressed; a mix with other files can still be.
         case .compress: !files.allSatisfy(Self.isArchive)
         case .extract: files.allSatisfy(Self.isArchive)
+        case .removeBackground: files.allSatisfy(Self.isImage)
         }
     }
 
     private static func isArchive(_ file: URL) -> Bool {
         guard let type = try? file.resourceValues(forKeys: [.contentTypeKey]).contentType else { return false }
         return ArchiveConverter.readableTypes.contains(where: type.conforms(to:))
+    }
+
+    private static func isImage(_ file: URL) -> Bool {
+        guard let type = try? file.resourceValues(forKeys: [.contentTypeKey]).contentType else { return false }
+        return ImageConverter().inputs.contains(where: type.conforms(to:))
     }
 
     @MainActor
@@ -87,6 +99,11 @@ enum QuickAction: CaseIterable {
         case .extract:
             for archive in files {
                 try await Self.extract(archive)
+            }
+
+        case .removeBackground:
+            for image in files {
+                try await Self.removeBackground(image)
             }
         }
     }
@@ -150,6 +167,43 @@ enum QuickAction: CaseIterable {
             )
             try FileManager.default.moveItem(at: contents, to: destination)
         }
+    }
+
+    // The subject lifting Preview and Photos use. Always a PNG, the common format that keeps
+    // transparency: "photo.jpg" becomes "photo (No Background).png".
+    private static func removeBackground(_ file: URL) async throws {
+        let (image, metadata) = try ImageConverter.read(file)
+        let handler = VNImageRequestHandler(cgImage: image)
+        let request = VNGenerateForegroundInstanceMaskRequest()
+        try handler.perform([request])
+        guard let mask = request.results?.first else { throw QuickActionError.noSubject(file.lastPathComponent) }
+        let pixels = CIImage(
+            cvPixelBuffer: try mask.generateMaskedImage(
+                ofInstances: mask.allInstances,
+                from: handler,
+                croppedToInstancesExtent: false
+            )
+        )
+        guard let cutOut = CIContext().createCGImage(pixels, from: pixels.extent) else {
+            throw ConversionError.writeFailed
+        }
+
+        let directory = file.deletingLastPathComponent()
+        let workspace = try FileManager.default.url(
+            for: .itemReplacementDirectory,
+            in: .userDomainMask,
+            appropriateFor: directory,
+            create: true
+        )
+        defer { try? FileManager.default.removeItem(at: workspace) }
+        let temporary = workspace.appending(path: "output.png")
+        try ImageConverter.write(cutOut, metadata: metadata, as: .png, to: temporary)
+        let destination = FileManager.default.availableURL(
+            base: "\(try FileManager.baseName(of: file)) (No Background)",
+            suffix: ".png",
+            in: directory
+        )
+        try FileManager.default.moveItem(at: temporary, to: destination)
     }
 
     // The pasteboard silently drops a file unless Clementine can read its folder, even though

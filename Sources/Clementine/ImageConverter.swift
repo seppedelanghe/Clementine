@@ -55,6 +55,8 @@ struct ImageConverter: Converter {
         else { throw ConversionError.encoderUnavailable }
 
         var properties = metadata
+        // The source's flag; a JPEG's false would drop the alpha of an image cut out from it.
+        properties[kCGImagePropertyHasAlpha] = nil
         properties[kCGImagePropertyOrientation] = 1
         if var tiff = properties[kCGImagePropertyTIFFDictionary] as? [CFString: Any] {
             tiff[kCGImagePropertyTIFFOrientation] = 1
