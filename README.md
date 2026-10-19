@@ -26,8 +26,10 @@ show their progress in the menu bar.
 | Images: JPG, PNG, HEIC, TIFF, GIF, BMP, WebP | JPG, PNG, HEIC, TIFF, PDF |
 | Video: MP4, MOV, MKV, WebM, AVI, WMV, … | MP4, MOV, MKV, WebM, AVI, WMV, GIF, M4A, MP3 |
 | Audio: MP3, M4A, WAV, AIFF, FLAC, OGG, Opus, WMA, … | MP3, M4A, WAV, AIFF, FLAC, OGG, Opus, WMA |
+| Archives: ZIP, 7z, RAR, TAR, TAR.GZ, TAR.BZ2, TAR.XZ | ZIP, 7z, TAR, TAR.GZ, TAR.XZ |
+| Folders | ZIP, 7z, TAR.GZ, TAR.XZ |
 
-Actions: **Copy**, **Copy Path** and **AirDrop**.
+Actions: **Copy**, **Copy Path**, **AirDrop**, **Compress** and **Extract**.
 
 ## Install
 
