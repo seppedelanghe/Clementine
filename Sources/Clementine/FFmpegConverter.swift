@@ -77,6 +77,15 @@ enum FFmpeg {
         )
     }
 
+    // Every other stream is copied as it is. The muxer follows `destination`'s extension, which
+    // names it for every video container.
+    static func removeAudio(_ source: URL, destination: URL) async throws {
+        try await run(
+            ["-i", source.path, "-map", "0", "-map", "-0:a", "-map", "-0:d", "-c", "copy", destination.path],
+            progress: { _ in }
+        )
+    }
+
     // Fixed defaults per output; docs/ffmpeg.md has the reasoning. The muxer is always explicit
     // because the extension alone doesn't select it (M4A needs ipod, WMA needs asf).
     private static func arguments(for format: OutputFormat) -> [String] {

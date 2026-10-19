@@ -28,6 +28,7 @@ enum QuickAction: CaseIterable {
     case extract
     case removeBackground
     case combineIntoPDF
+    case removeAudio
 
     var title: String {
         switch self {
@@ -38,6 +39,7 @@ enum QuickAction: CaseIterable {
         case .extract: "Extract"
         case .removeBackground: "Remove Background"
         case .combineIntoPDF: "Combine into PDF"
+        case .removeAudio: "Remove Audio"
         }
     }
 
@@ -50,6 +52,7 @@ enum QuickAction: CaseIterable {
         case .extract: "archivebox"
         case .removeBackground: "person.and.background.dotted"
         case .combineIntoPDF: "rectangle.stack"
+        case .removeAudio: "speaker.slash"
         }
     }
 
@@ -61,6 +64,7 @@ enum QuickAction: CaseIterable {
         case .extract: files.allSatisfy(Self.isArchive)
         case .removeBackground: files.allSatisfy(Self.isImage)
         case .combineIntoPDF: files.count > 1 && files.allSatisfy { Self.isImage($0) || Self.isPDF($0) }
+        case .removeAudio: files.allSatisfy(Self.isVideo)
         }
     }
 
@@ -76,6 +80,10 @@ enum QuickAction: CaseIterable {
 
     private static func isPDF(_ file: URL) -> Bool {
         (try? file.resourceValues(forKeys: [.contentTypeKey]).contentType)?.conforms(to: .pdf) == true
+    }
+
+    private static func isVideo(_ file: URL) -> Bool {
+        (try? file.resourceValues(forKeys: [.contentTypeKey]).contentType)?.conforms(to: .movie) == true
     }
 
     @MainActor
@@ -117,6 +125,11 @@ enum QuickAction: CaseIterable {
 
         case .combineIntoPDF:
             try await Self.combineIntoPDF(files)
+
+        case .removeAudio:
+            for video in files {
+                try await Self.removeAudio(video)
+            }
         }
     }
 
@@ -253,6 +266,27 @@ enum QuickAction: CaseIterable {
         let temporary = workspace.appending(path: "output.pdf")
         guard combined.write(to: temporary) else { throw ConversionError.writeFailed }
         let destination = FileManager.default.availableURL(base: "Combined", suffix: ".pdf", in: directory)
+        try FileManager.default.moveItem(at: temporary, to: destination)
+    }
+
+    // "clip.mov" becomes "clip (No Audio).mov".
+    private static func removeAudio(_ file: URL) async throws {
+        let directory = file.deletingLastPathComponent()
+        let workspace = try FileManager.default.url(
+            for: .itemReplacementDirectory,
+            in: .userDomainMask,
+            appropriateFor: directory,
+            create: true
+        )
+        defer { try? FileManager.default.removeItem(at: workspace) }
+        let suffix = file.pathExtension.isEmpty ? "" : ".\(file.pathExtension)"
+        let temporary = workspace.appending(path: "output\(suffix)")
+        try await FFmpeg.removeAudio(file, destination: temporary)
+        let destination = FileManager.default.availableURL(
+            base: "\(try FileManager.baseName(of: file)) (No Audio)",
+            suffix: suffix,
+            in: directory
+        )
         try FileManager.default.moveItem(at: temporary, to: destination)
     }
 
