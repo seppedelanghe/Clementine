@@ -63,6 +63,20 @@ enum FFmpeg {
         )
     }
 
+    // Sets the rotation players apply instead of turning the pixels, so the streams are copied
+    // untouched and it takes no time. `degrees` is clockwise and replaces the video's own.
+    static func rotate(_ source: URL, to degrees: Int, muxer: String, destination: URL, progress: @escaping ProgressHandler)
+        async throws
+    {
+        try await run(
+            [
+                "-display_rotation:v:0", String(-degrees), "-i", source.path,
+                "-map", "0:v", "-map", "0:a?", "-c", "copy", "-f", muxer, destination.path,
+            ],
+            progress: progress
+        )
+    }
+
     // Fixed defaults per output; docs/ffmpeg.md has the reasoning. The muxer is always explicit
     // because the extension alone doesn't select it (M4A needs ipod, WMA needs asf).
     private static func arguments(for format: OutputFormat) -> [String] {

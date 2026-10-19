@@ -124,8 +124,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 Self.perform(Rotate.title, logger: logger) {
                     let job = activity.begin(files, to: option.title)
                     defer { activity.end(job) }
-                    try await Rotate.run(files, to: option) { fileIndex in
-                        Task { @MainActor in activity.update(job, fileIndex: fileIndex, fileFraction: 0) }
+                    try await Rotate.run(files, to: option) { fileIndex, fraction in
+                        Task { @MainActor in activity.update(job, fileIndex: fileIndex, fileFraction: fraction) }
                     }
                 }
             case .open:
