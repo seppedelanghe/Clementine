@@ -149,7 +149,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             (
                 "Convert",
                 registry.formats(for: trigger.files).map {
-                    WheelItem(title: $0.title, symbol: $0.symbol, action: .convert($0))
+                    WheelItem(title: $0.title, symbol: nil, action: .convert($0))
                 }
             )
         case .actions:

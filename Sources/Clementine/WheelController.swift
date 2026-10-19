@@ -23,7 +23,8 @@ final class WheelController {
         self.files = files
 
         guard panel == nil else { return }
-        let size = WheelModel.diameter
+        model.isOpen = false
+        let size = WheelModel.canvas
         let frame = NSRect(x: location.x - size / 2, y: location.y - size / 2, width: size, height: size)
         let panel = NSPanel(
             contentRect: frame,
@@ -78,7 +79,7 @@ private final class WheelDropView: NSView {
         self.model = model
         self.onDrop = onDrop
         self.onEnd = onEnd
-        let size = WheelModel.diameter
+        let size = WheelModel.canvas
         super.init(frame: NSRect(x: 0, y: 0, width: size, height: size))
 
         let hosting = NSHostingView(rootView: WheelView(model: model))
