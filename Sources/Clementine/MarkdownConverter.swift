@@ -251,8 +251,6 @@ private final class MarkdownStyle {
             let type = UTType(filenameExtension: url.pathExtension)
         else { return nil }
         let attachment = NSTextAttachment(data: data, ofType: type.identifier)
-        // Without the image set as well, the attachment draws at the file's pixel size.
-        attachment.image = image
         let scale = min(1, maxImageWidth / image.size.width)
         attachment.bounds = CGRect(x: 0, y: 0, width: image.size.width * scale, height: image.size.height * scale)
         return attachment

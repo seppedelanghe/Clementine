@@ -50,12 +50,52 @@ struct TextDocumentConverter: Converter {
             }
         attributes[.characterEncoding] = String.Encoding.utf8.rawValue
         guard
-            let data = try? document.data(
+            var data = try? document.data(
                 from: NSRange(location: 0, length: document.length),
                 documentAttributes: attributes
             )
         else { throw ConversionError.writeFailed }
+        if format == .html { data = Data(embeddingImages(of: document, in: String(decoding: data, as: UTF8.self)).utf8) }
         try data.write(to: destination)
+    }
+
+    // Cocoa's HTML writer points each image at a made-up "file:///Attachment.png" and writes no
+    // image files, so the images go into the page as data URLs instead, matched in document order.
+    @MainActor
+    private static func embeddingImages(of document: NSAttributedString, in html: String) -> String {
+        var images: [NSTextAttachment] = []
+        document.enumerateAttribute(.attachment, in: NSRange(location: 0, length: document.length)) { value, _, _ in
+            if let attachment = value as? NSTextAttachment { images.append(attachment) }
+        }
+        let tags = try! NSRegularExpression(pattern: #"<img src="[^"]*""#)
+            .matches(in: html, range: NSRange(html.startIndex..., in: html))
+        // Pairing by position is only safe when every attachment produced exactly one tag.
+        guard tags.count == images.count else { return html }
+
+        var output = html
+        for (tag, attachment) in zip(tags, images).reversed() {
+            guard let source = dataURL(for: attachment) else { continue }
+            let width = attachment.bounds.width > 0 ? " width=\"\(Int(attachment.bounds.width))\"" : ""
+            output.replaceSubrange(Range(tag.range, in: output)!, with: "<img src=\"\(source)\"\(width)")
+        }
+        return output
+    }
+
+    @MainActor
+    private static func dataURL(for attachment: NSTextAttachment) -> String? {
+        if
+            let data = attachment.contents ?? attachment.fileWrapper?.regularFileContents,
+            let type = attachment.fileType.flatMap(UTType.init),
+            let mimeType = type.preferredMIMEType
+        {
+            return "data:\(mimeType);base64,\(data.base64EncodedString())"
+        }
+        guard
+            let image = attachment.image,
+            let tiff = image.tiffRepresentation,
+            let png = NSBitmapImageRep(data: tiff)?.representation(using: .png, properties: [:])
+        else { return nil }
+        return "data:image/png;base64,\(png.base64EncodedString())"
     }
 
     // A print job saved to a file splits pages on line boundaries; pdfOperation and dataWithPDF
