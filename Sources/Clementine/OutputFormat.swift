@@ -80,4 +80,20 @@ extension OutputFormat {
         fileExtension: "tar.xz",
         symbol: "doc.zipper"
     )
+
+    static let docx = OutputFormat(
+        title: "DOCX",
+        type: UTType("org.openxmlformats.wordprocessingml.document")!,
+        fileExtension: "docx",
+        symbol: "doc.text"
+    )
+    static let rtf = OutputFormat(title: "RTF", type: .rtf, fileExtension: "rtf", symbol: "doc.richtext")
+    static let odt = OutputFormat(
+        title: "ODT",
+        type: UTType("org.oasis-open.opendocument.text")!,
+        fileExtension: "odt",
+        symbol: "doc.text"
+    )
+    static let html = OutputFormat(title: "HTML", type: .html, fileExtension: "html", symbol: "chevron.left.forwardslash.chevron.right")
+    static let txt = OutputFormat(title: "TXT", type: .plainText, fileExtension: "txt", symbol: "doc.plaintext")
 }
