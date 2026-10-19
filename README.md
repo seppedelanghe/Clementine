@@ -8,6 +8,8 @@ wheel.
 Everything runs locally. Files are never uploaded, and the original is never changed: the
 converted file is saved next to it.
 
+<p align="center"><img src="assets/demo.gif" width="720" alt="A photo converted to HEIC, a ZIP repacked as 7z, and the 7z extracted, each by dropping it on Clementine's wheel"></p>
+
 ## How it works
 
 1. Drag one or more files, from Finder or anywhere else.
